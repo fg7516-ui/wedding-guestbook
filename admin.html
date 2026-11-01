@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>방명록 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+  /* 레이아웃: 가운데 한 줄짜리 관리 화면. 위에 요약, 그 아래 도구 줄, 그 아래 하객 목록. */
+  :root{
+    --bg:#0f0c1a;
+    --panel:#1a1528;
+    --panel2:#231d35;
+    --line:rgba(246,239,227,.12);
+    --text:#f6efe3;
+    --muted:rgba(246,239,227,.62);
+    --gold:#e8b86d;
+    --blue:#7d9cf0;
+    --danger:#e8676b;
+    --font-title:"Jua", "Gowun Dodum", sans-serif;
+    --font-body:"Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:var(--font-body); color:var(--text); background:var(--bg);
+    min-height:100dvh;
+    padding-left:max(16px, env(safe-area-inset-left, 0px));
+    padding-right:max(16px, env(safe-area-inset-right, 0px));
+    padding-block:calc(20px + env(safe-area-inset-top, 0px)) calc(40px + env(safe-area-inset-bottom, 0px));
+  }
+  .wrap{max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:16px;}
+  #adminView{display:flex; flex-direction:column; gap:14px;}
+  h1{font-family:var(--font-title); font-weight:400; font-size:24px; margin:0; color:var(--gold); text-wrap:balance;}
+  .sub{margin:4px 0 0; color:var(--muted); font-size:14px;}
+  .top{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  button{font-family:var(--font-title); cursor:pointer;}
+  :focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+  .btn{border:none; border-radius:10px; padding:10px 14px; font-size:15px; background:var(--panel2); color:var(--text);}
+  .btn.primary{background:var(--gold); color:#1c1424;}
+  .btn.danger{background:var(--danger); color:#fff;}
+  .btn.ghost{background:transparent; border:1px solid var(--line);}
+  .btn:disabled{opacity:.5; cursor:default;}
+
+  /* 로그인 */
+  .login{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:24px; display:flex; flex-direction:column; gap:12px; max-width:380px; width:100%; margin:8vh auto 0;
+  }
+  .login label{font-size:14px; color:var(--muted);}
+  input[type=password], input[type=search]{
+    width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+    background:#120f1e; color:var(--text); font-family:var(--font-body); font-size:16px;
+  }
+  .err{margin:0; color:var(--danger); font-size:14px; line-height:1.5;}
+  .note{
+    margin:0; padding:10px 12px; border-radius:10px; font-size:14px; line-height:1.5;
+    background:rgba(232,103,107,.14); border:1px solid rgba(232,103,107,.4); color:#ffd6d6;
+  }
+
+  /* 요약 */
+  .stats{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .stat b{display:block; font-family:var(--font-title); font-weight:400; font-size:26px; color:var(--text); font-variant-numeric:tabular-nums;}
+  .stat span{font-size:13px; color:var(--muted);}
+
+  /* 도구 줄 */
+  .tools{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .tools input[type=search]{flex:1 1 200px; min-width:0;}
+  .selbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--panel2); border-radius:12px; padding:10px 12px; font-size:15px;
+  }
+  .selbar .acts{display:flex; gap:8px;}
+
+  /* 목록 */
+  .list{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--panel);}
+  .head{display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:13px; color:var(--muted); border-bottom:1px solid var(--line);}
+  .row{display:grid; grid-template-columns:24px 40px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line);}
+  .row:last-child{border-bottom:none;}
+  .row.sel{background:rgba(232,184,109,.08);}
+  .row canvas{width:40px; height:65px; image-rendering:pixelated;}
+  .who{min-width:0;}
+  .name{font-family:var(--font-title); font-size:17px; margin:0; overflow-wrap:anywhere;}
+  .msg{margin:2px 0 0; font-size:15px; line-height:1.5; overflow-wrap:anywhere;}
+  .msg.none{color:var(--muted);}
+  .when{margin:4px 0 0; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .rowActs{display:flex; flex-direction:column; gap:6px; align-items:flex-end;}
+  .confirm{display:flex; gap:6px;}
+  .confirm .btn{padding:8px 10px; font-size:14px;}
+  input[type=checkbox]{width:18px; height:18px; accent-color:var(--gold); margin:0;}
+  .empty{padding:28px 16px; text-align:center; color:var(--muted); font-size:15px; line-height:1.6;}
+  .toast{
+    position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%);
+    background:var(--text); color:#1c1424; padding:10px 16px; border-radius:999px; font-size:14px; z-index:20;
+    max-width:calc(100% - 32px);
+  }
+  textarea.copyBox{width:100%; height:160px; border-radius:10px; background:#120f1e; color:var(--text); border:1px solid var(--line); padding:10px; font-family:var(--font-body); font-size:14px;}
+
+  @media (max-width:420px){
+    .stats{grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px;}
+    .stat{padding:10px;}
+    .stat b{font-size:22px;}
+    .row{grid-template-columns:20px 30px minmax(0,1fr) auto; gap:10px; align-items:start; padding:12px;}
+    .row > input[type=checkbox]{margin-top:4px;}
+    .row canvas{width:30px; height:49px;}
+    .rowActs .btn{padding:8px 10px; font-size:14px;}
+    .confirm{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section id="loginView">
+    <form class="login" id="loginForm" autocomplete="off">
+      <h1>방명록 관리</h1>
+      <p class="sub" style="margin:0">MINSU ♥ JISU 웨딩 방명록 관리자 전용 페이지예요.</p>
+      <label for="pw">관리자 비밀번호</label>
+      <input type="password" id="pw" inputmode="numeric" autocomplete="current-password" required>
+      <p class="err" id="loginErr" hidden></p>
+      <button class="btn primary" id="loginBtn" type="submit">들어가기</button>
+    </form>
+  </section>
+
+  <section id="adminView" hidden>
+    <div class="top">
+      <div>
+        <h1>방명록 관리</h1>
+        <p class="sub">새 방명록이 남겨지면 자동으로 목록에 나타나요.</p>
+      </div>
+      <button class="btn ghost" id="logoutBtn" type="button">로그아웃</button>
+    </div>
+
+    <p class="note" id="permNote" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="stTotal">0</b><span>전체 하객</span></div>
+      <div class="stat"><b id="stMsg">0</b><span>메시지 남김</span></div>
+      <div class="stat"><b id="stToday">0</b><span>오늘 입장</span></div>
+    </div>
+
+    <div class="tools">
+      <input type="search" id="q" placeholder="이름이나 메시지로 찾기" aria-label="하객 검색">
+      <button class="btn" id="copyBtn" type="button">명단 복사</button>
+      <button class="btn" id="csvBtn" type="button">엑셀용 저장</button>
+    </div>
+    <textarea class="copyBox" id="copyBox" hidden readonly aria-label="복사할 명단"></textarea>
+
+    <div class="selbar" id="selBar" hidden>
+      <span id="selText">0명 선택</span>
+      <div class="acts" id="selActs">
+        <button class="btn ghost" id="selClear" type="button">선택 해제</button>
+        <button class="btn danger" id="selDelete" type="button">선택 삭제</button>
+      </div>
+      <div class="acts" id="selConfirm" hidden>
+        <span id="selAsk" style="align-self:center">정말 삭제할까요?</span>
+        <button class="btn ghost" id="selNo" type="button">취소</button>
+        <button class="btn danger" id="selYes" type="button">삭제</button>
+      </div>
+    </div>
+
+    <div class="list">
+      <div class="head">
+        <input type="checkbox" id="selAll" aria-label="보이는 하객 모두 선택">
+        <span id="headText">최신순</span>
+      </div>
+      <div id="rows"><div class="empty">불러오는 중...</div></div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* 관리자 로그인에 쓰는 계정 (비밀번호는 Firebase에만 저장되고, 이 코드에는 없어요) */
+const ADMIN_EMAIL = 'admin@wedding-guestbook.app';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCeHVHTT7r1lkbhDJaBeW-5Y7sXbao1dWc",
+  authDomain: "wedding-guestbook-32c45.firebaseapp.com",
+  projectId: "wedding-guestbook-32c45",
+  storageBucket: "wedding-guestbook-32c45.firebasestorage.app",
+  messagingSenderId: "1006778051059",
+  appId: "1:1006778051059:web:74ba4cc8ab33d606948a86"
+};
+
+/*==SPRITE_START==*/
+/* =========================================================
+   1) 색 도우미, 팔레트, 미니미 한 명 그리기 (22x36 도트)
+========================================================= */
+function hex2rgb(h){ const n = parseInt(h.slice(1), 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+function rgb2hex(r,g,b){ return '#' + [r,g,b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function shade(h, f){ const c = hex2rgb(h); return rgb2hex(c[0]*f, c[1]*f, c[2]*f); }
+function lighten(h, a){ const c = hex2rgb(h); return rgb2hex(c[0]+(255-c[0])*a, c[1]+(255-c[1])*a, c[2]+(255-c[2])*a); }
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1 | a); t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t; return ((t ^ t>>>14) >>> 0) / 4294967296; }; }
+
+const SKINS = ['#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
+const HAIRS = ['#1b1b1f','#3b2418','#6b4226','#a9742f','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#6fa8dc'];
+const TOPS  = ['#2b3350','#1f1f2e','#f6f6f6','#c0392b','#e8919c','#6fa8dc','#8fd18a','#ffc15e','#b9a4f0','#8a5a3c'];
+const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리'];
+const OUTFITS = ['정장','턱시도','원피스','캐주얼'];
+const HEXRE = /^#[0-9a-fA-F]{6}$/;
+
+const SW = 22, SH = 36, FEET = 33;
+
+function defaultLook(){ return { s:SKINS[1], h:HAIRS[1], t:TOPS[0], hs:0, o:0, g:0, v:0 }; }
+function clampInt(v, lo, hi, d){ v = parseInt(v, 10); return (isNaN(v) || v < lo || v > hi) ? d : v; }
+function cleanLook(r){
+  const d = defaultLook();
+  if(!r || typeof r !== 'object') return d;
+  return {
+    s: HEXRE.test(r.s) ? r.s : d.s,
+    h: HEXRE.test(r.h) ? r.h : d.h,
+    t: HEXRE.test(r.t) ? r.t : d.t,
+    hs: clampInt(r.hs, 0, 4, 0),
+    o: clampInt(r.o, 0, 3, 0),
+    g: r.g ? 1 : 0,
+    v: 0
+  };
+}
+function randomLook(rnd){
+  const p = a => a[Math.floor(rnd() * a.length)];
+  return { s:p(SKINS), h:p(HAIRS.slice(0,7)), t:p(TOPS), hs:Math.floor(rnd()*5), o:Math.floor(rnd()*4), g:rnd()<0.25?1:0, v:0 };
+}
+
+function buildSprite(look, frame){
+  const c = document.createElement('canvas'); c.width = SW; c.height = SH;
+  const g = c.getContext('2d');
+  const R = (x,y,w,h,col) => { g.fillStyle = col; g.fillRect(x,y,w,h); };
+  const skin = look.s, skinSh = shade(skin, .86);
+  const hair = look.h, hairHi = lighten(hair, .38);
+  const top = look.t, topSh = shade(top, .78), topHi = lighten(top, .22);
+  const o = look.o, hs = look.hs, w1 = frame === 1;
+  const dress = (o === 2);
+  const pants = (o === 3) ? '#3d5a99' : shade(top, .85);
+  const shoe = (o === 3) ? '#f4f4f4' : '#2b2433';
+
+  /* 뒤쪽 머리카락 */
+  if(hs === 2) R(4,6,14,19,hair);
+  if(hs === 3) R(4,6,14,10,hair);
+
+  /* 다리와 신발 */
+  if(dress){
+    R(8,31,2,1,skin); R(12,31,2,1,skin);
+    R(7,w1?31:32,3,1,'#3a2a3a'); R(12,32,3,1,'#3a2a3a');
+  } else {
+    const ly = w1 ? 1 : 0;
+    R(8,26,3,5-ly,pants); R(7,31-ly,4,2,shoe);
+    R(11,26,3,5,pants);   R(11,31,4,2,shoe);
+    R(10,26,1,5-ly,shade(pants,.8)); R(11,26,1,5,shade(pants,.8));
+  }
+
+  /* 몸통과 팔 */
+  const swL = w1 ? 1 : 0, swR = w1 ? 1 : 0;
+  if(dress){
+    R(7,18,8,6,top); R(7,23,8,1,topSh); R(9,18,4,1,skin);
+    const rows = [[6,10],[6,10],[5,12],[5,12],[4,14],[4,14],[4,14]];
+    rows.forEach((r,i) => R(r[0],24+i,r[1],1,top));
+    R(4,30,14,1,topSh); R(8,26,1,4,topSh); R(13,26,1,4,topSh); R(14,19,1,4,topSh);
+    R(5,19,2,2,top); R(15,19,2,2,top);
+    R(5,21,2,6-swL,skin); R(15,21,2,6+swR,skin);
+  } else {
+    R(7,18,8,8,top); R(14,19,1,6,topSh); R(8,18,6,1,topSh);
+    R(5,19,2,6-swL,top); R(15,19,2,6+swR,top);
+    R(5,25-swL,2,2,skin); R(15,25+swR,2,2,skin);
+    if(o === 0){
+      R(10,18,2,6,'#f4f4f4'); R(10,20,2,4,'#c0392b'); R(10,19,2,1,'#8f2a20');
+      R(9,18,1,4,topSh); R(12,18,1,4,topSh);
+    } else if(o === 1){
+      R(9,18,4,5,'#f6f6f6'); R(9,18,4,2,'#2a2a2a'); R(10,18,2,1,'#c0392b'); R(7,23,8,1,'#222222');
+      R(8,18,1,5,topSh); R(13,18,1,5,topSh);
+    } else {
+      R(9,18,4,1,topSh); R(12,21,2,2,topHi);
+    }
+  }
+
+  /* 얼굴 */
+  R(6,6,10,1,skin); R(5,7,12,9,skin); R(6,16,10,1,skin); R(7,17,8,1,skinSh);
+  R(7,11,2,3,'#2a1b24'); R(13,11,2,3,'#2a1b24');
+  R(7,11,1,1,'#ffffff'); R(13,11,1,1,'#ffffff');
+  R(6,15,2,1,'#ff9aa2'); R(14,15,2,1,'#ff9aa2');
+  R(10,15,2,1,'#b5524a');
+
+  /* 앞쪽 머리카락 */
+  R(7,3,8,1,hair); R(6,4,10,1,hair); R(5,5,12,2,hair);
+  R(8,4,3,1,hairHi);
+  if(hs === 0 || hs === 2 || hs === 4){
+    R(5,7,4,1,hair); R(13,7,4,1,hair); R(5,8,2,1,hair); R(15,8,2,1,hair); R(5,9,1,2,hair); R(16,9,1,2,hair);
+  } else if(hs === 1){
+    R(5,7,12,1,hair); R(5,8,6,1,hair); R(5,9,3,1,hair); R(16,8,1,3,hair);
+  } else {
+    R(5,7,12,1,hair); R(5,8,3,1,hair); R(14,8,3,1,hair);
+  }
+  if(hs === 4){ R(9,1,4,1,hair); R(8,2,6,1,hair); R(10,1,1,1,hairHi); }
+  if(hs === 2){ R(4,7,2,16,hair); R(16,7,2,16,hair); R(4,22,2,1,shade(hair,.8)); R(16,22,2,1,shade(hair,.8)); }
+  if(hs === 3){ R(4,7,2,9,hair); R(16,7,2,9,hair); R(4,15,2,1,shade(hair,.8)); R(16,15,2,1,shade(hair,.8)); }
+
+  /* 안경 */
+  if(look.g){
+    const f = '#3b3340';
+    R(6,10,4,1,f); R(6,14,4,1,f); R(6,11,1,3,f); R(9,11,1,3,f);
+    R(12,10,4,1,f); R(12,14,4,1,f); R(12,11,1,3,f); R(15,11,1,3,f);
+    R(10,11,2,1,f);
+  }
+
+  /* 면사포 (신부 전용) */
+  if(look.v){
+    const vc = '#f1ecff';
+    R(6,2,10,1,vc); R(3,7,2,18,vc); R(17,7,2,18,vc); R(3,24,2,1,'#d9d2f0'); R(17,24,2,1,'#d9d2f0');
+  }
+
+  /* 바깥 테두리 */
+  const img = g.getImageData(0,0,SW,SH);
+  const d = img.data, out = new Uint8ClampedArray(d);
+  const A = (x,y) => (x<0||y<0||x>=SW||y>=SH) ? 0 : d[(y*SW+x)*4+3];
+  for(let y=0;y<SH;y++) for(let x=0;x<SW;x++){
+    if(d[(y*SW+x)*4+3] === 0 && (A(x-1,y)>0 || A(x+1,y)>0 || A(x,y-1)>0 || A(x,y+1)>0)){
+      const i = (y*SW+x)*4; out[i]=0x2a; out[i+1]=0x1b; out[i+2]=0x2e; out[i+3]=255;
+    }
+  }
+  g.putImageData(new ImageData(out, SW, SH), 0, 0);
+  return c;
+}
+
+const spriteCache = new Map();
+function getSprite(look, frame, flip){
+  const key = [look.s, look.h, look.t, look.hs, look.o, look.g, look.v, frame, flip ? 1 : 0].join('|');
+  let s = spriteCache.get(key);
+  if(s) return s;
+  const base = buildSprite(look, frame);
+  if(!flip){ s = base; }
+  else {
+    s = document.createElement('canvas'); s.width = SW; s.height = SH;
+    const g = s.getContext('2d');
+    g.translate(SW, 0); g.scale(-1, 1); g.drawImage(base, 0, 0);
+  }
+  spriteCache.set(key, s);
+  return s;
+}
+/*==SPRITE_END==*/
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const $ = id => document.getElementById(id);
+const loginView = $('loginView'), adminView = $('adminView');
+let unsub = null;
+let all = [];                 // {id, name, message, look, date}
+const selected = new Set();
+let confirmId = null;
+
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(t._h); t._h = setTimeout(() => { t.hidden = true; }, 2400);
+}
+function fmt(d){
+  if(!d) return '';
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function sameDay(a, b){ return a && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+/* ---------- 로그인 ---------- */
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pw = $('pw').value;
+  const err = $('loginErr'); err.hidden = true;
+  $('loginBtn').disabled = true; $('loginBtn').textContent = '확인하는 중...';
+  try{
+    await auth.signInWithEmailAndPassword(ADMIN_EMAIL, pw);
+    $('pw').value = '';
+  }catch(ex){
+    console.error(ex);
+    const code = ex && ex.code || '';
+    err.textContent =
+      code === 'auth/too-many-requests' ? '여러 번 틀려서 잠시 막혔어요. 몇 분 뒤에 다시 해주세요.' :
+      code === 'auth/network-request-failed' ? '인터넷 연결을 확인하고 다시 해주세요.' :
+      code === 'auth/operation-not-allowed' ? 'Firebase에서 이메일/비밀번호 로그인이 아직 꺼져 있어요.' :
+      '비밀번호가 맞지 않아요. (관리자 계정을 아직 만들지 않았다면 Firebase에서 먼저 만들어주세요.)';
+    err.hidden = false;
+  }finally{
+    $('loginBtn').disabled = false; $('loginBtn').textContent = '들어가기';
+  }
+});
+$('logoutBtn').addEventListener('click', () => auth.signOut());
+
+auth.onAuthStateChanged(user => {
+  const ok = !!user && user.email === ADMIN_EMAIL;
+  loginView.hidden = ok; adminView.hidden = !ok;
+  if(user && !ok) auth.signOut();
+  if(ok) startList(); else stopList();
+});
+
+/* ---------- 목록 ---------- */
+function startList(){
+  if(unsub) return;
+  $('permNote').hidden = true;
+  unsub = db.collection('guests').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    all = snap.docs.map(doc => {
+      const d = doc.data();
+      const c = d.createdAt;
+      return { id: doc.id, name: d.name || '이름없음', message: d.message || '', look: cleanLook(d.look),
+               date: c && typeof c.toDate === 'function' ? c.toDate() : null };
+    });
+    for(const id of Array.from(selected)) if(!all.some(g => g.id === id)) selected.delete(id);
+    render();
+  }, ex => {
+    console.error(ex);
+    $('rows').innerHTML = '<div class="empty">방명록을 불러오지 못했어요. 인터넷 연결이나 Firestore 규칙을 확인해주세요.</div>';
+  });
+}
+function stopList(){
+  if(unsub){ unsub(); unsub = null; }
+  all = []; selected.clear(); confirmId = null;
+}
+
+function visible(){
+  const q = $('q').value.trim().toLowerCase();
+  if(!q) return all;
+  return all.filter(g => g.name.toLowerCase().includes(q) || g.message.toLowerCase().includes(q));
+}
+
+function render(){
+  const now = new Date();
+  $('stTotal').textContent = all.length;
+  $('stMsg').textContent = all.filter(g => g.message).length;
+  $('stToday').textContent = all.filter(g => sameDay(g.date, now)).length;
+
+  const list = visible();
+  const rows = $('rows');
+  rows.innerHTML = '';
+  $('headText').textContent = $('q').value.trim() ? '찾은 하객 ' + list.length + '명' : '최신순 ' + list.length + '명';
+  if(!list.length){
+    const e = document.createElement('div'); e.className = 'empty';
+    e.innerHTML = all.length ? '찾는 하객이 없어요.' : '아직 방명록이 없어요.<br>하객이 QR로 들어와 미니미를 만들면 여기에 나타나요.';
+    rows.appendChild(e);
+  }
+  list.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'row' + (selected.has(g.id) ? ' sel' : '');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = selected.has(g.id);
+    cb.setAttribute('aria-label', g.name + ' 선택');
+    cb.addEventListener('change', () => { cb.checked ? selected.add(g.id) : selected.delete(g.id); render(); });
+
+    const cv = document.createElement('canvas'); cv.width = SW; cv.height = SH;
+    cv.getContext('2d').drawImage(getSprite(g.look, 0, false), 0, 0);
+
+    const who = document.createElement('div'); who.className = 'who';
+    const n = document.createElement('p'); n.className = 'name'; n.textContent = g.name;
+    const m = document.createElement('p'); m.className = 'msg' + (g.message ? '' : ' none'); m.textContent = g.message || '메시지 없음';
+    const w = document.createElement('p'); w.className = 'when'; w.textContent = fmt(g.date);
+    who.append(n, m, w);
+
+    const acts = document.createElement('div'); acts.className = 'rowActs';
+    if(confirmId === g.id){
+      const box = document.createElement('div'); box.className = 'confirm';
+      const no = document.createElement('button'); no.type = 'button'; no.className = 'btn ghost'; no.textContent = '취소';
+      no.addEventListener('click', () => { confirmId = null; render(); });
+      const yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn danger'; yes.textContent = '삭제';
+      yes.addEventListener('click', () => removeIds([g.id]));
+      box.append(no, yes); acts.appendChild(box);
+    } else {
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'btn'; del.textContent = '삭제';
+      del.addEventListener('click', () => { confirmId = g.id; render(); });
+      acts.appendChild(del);
+    }
+    row.append(cb, cv, who, acts);
+    rows.appendChild(row);
+  });
+
+  const vis = list.map(g => g.id);
+  $('selAll').checked = vis.length > 0 && vis.every(id => selected.has(id));
+  $('selBar').hidden = selected.size === 0;
+  $('selText').textContent = selected.size + '명 선택';
+  if(selected.size === 0){ $('selActs').hidden = false; $('selConfirm').hidden = true; }
+}
+
+$('q').addEventListener('input', () => { confirmId = null; render(); });
+$('selAll').addEventListener('change', e => {
+  const vis = visible().map(g => g.id);
+  vis.forEach(id => e.target.checked ? selected.add(id) : selected.delete(id));
+  render();
+});
+$('selClear').addEventListener('click', () => { selected.clear(); render(); });
+$('selDelete').addEventListener('click', () => {
+  $('selAsk').textContent = selected.size + '명을 정말 삭제할까요?';
+  $('selActs').hidden = true; $('selConfirm').hidden = false;
+});
+$('selNo').addEventListener('click', () => { $('selActs').hidden = false; $('selConfirm').hidden = true; });
+$('selYes').addEventListener('click', () => removeIds(Array.from(selected)));
+
+async function removeIds(ids){
+  if(!ids.length) return;
+  try{
+    for(let i = 0; i < ids.length; i += 400){
+      const batch = db.batch();
+      ids.slice(i, i + 400).forEach(id => batch.delete(db.collection('guests').doc(id)));
+      await batch.commit();
+    }
+    ids.forEach(id => selected.delete(id));
+    confirmId = null;
+    $('selActs').hidden = false; $('selConfirm').hidden = true;
+    toast(ids.length + '명을 삭제했어요.');
+    render();
+  }catch(ex){
+    console.error(ex);
+    const note = $('permNote');
+    note.textContent = (ex && ex.code === 'permission-denied')
+      ? '삭제 권한이 없어요. Firestore 규칙에 관리자 삭제 줄을 추가했는지 확인해주세요.'
+      : '삭제하지 못했어요. 인터넷 연결을 확인하고 다시 해주세요.';
+    note.hidden = false;
+    confirmId = null; render();
+  }
+}
+
+/* ---------- 명단 복사 / 엑셀용 저장 ---------- */
+function listText(){
+  return all.slice().reverse().map((g, i) => (i+1) + '. ' + g.name + (g.message ? ' - ' + g.message : '')).join('\n');
+}
+$('copyBtn').addEventListener('click', async () => {
+  const text = listText();
+  if(!text){ toast('복사할 명단이 없어요.'); return; }
+  try{
+    await navigator.clipboard.writeText(text);
+    $('copyBox').hidden = true;
+    toast('명단을 복사했어요.');
+  }catch(ex){
+    const box = $('copyBox'); box.value = text; box.hidden = false; box.focus(); box.select();
+    toast('자동 복사가 막혀서 아래 칸을 길게 눌러 복사해주세요.');
+  }
+});
+$('csvBtn').addEventListener('click', () => {
+  if(!all.length){ toast('저장할 명단이 없어요.'); return; }
+  const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const lines = [['번호','이름','축하 메시지','남긴 시각'].map(esc).join(',')];
+  all.slice().reverse().forEach((g, i) => lines.push([i+1, g.name, g.message, fmt(g.date)].map(esc).join(',')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '방명록_명단.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+</script>
+</body>
+</html>
