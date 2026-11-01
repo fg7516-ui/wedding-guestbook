@@ -20,6 +20,8 @@
     --gold:#e8b86d;
     --blue:#7d9cf0;
     --danger:#e8676b;
+    --groom:#4f86ea;
+    --bride:#ee7fa2;
     --font-title:"Jua", "Gowun Dodum", sans-serif;
     --font-body:"Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     color-scheme: dark;
@@ -64,7 +66,13 @@
   }
 
   /* 요약 */
-  .stats{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px;}
+  .stats{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px;}
+  .stat.groom b{color:#a9c4ff;}
+  .stat.bride b{color:#ffc1d3;}
+  .badge{display:inline-block; font-family:var(--font-body); font-size:12px; line-height:1.5; padding:0 8px; border-radius:999px; margin-left:6px; vertical-align:2px;}
+  .badge.groom{background:rgba(79,134,234,.25); color:#c2d4ff;}
+  .badge.bride{background:rgba(238,127,162,.25); color:#ffd0dd;}
+  select{padding:11px 12px; border-radius:10px; border:1px solid var(--line); background:#120f1e; color:var(--text); font-family:var(--font-body); font-size:15px;}
   .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
   .stat b{display:block; font-family:var(--font-title); font-weight:400; font-size:26px; color:var(--text); font-variant-numeric:tabular-nums;}
   .stat span{font-size:13px; color:var(--muted);}
@@ -103,7 +111,7 @@
   textarea.copyBox{width:100%; height:160px; border-radius:10px; background:#120f1e; color:var(--text); border:1px solid var(--line); padding:10px; font-family:var(--font-body); font-size:14px;}
 
   @media (max-width:420px){
-    .stats{grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px;}
+    .stats{grid-template-columns:repeat(2, minmax(0,1fr)); gap:6px;}
     .stat{padding:10px;}
     .stat b{font-size:22px;}
     .row{grid-template-columns:20px 30px minmax(0,1fr) auto; gap:10px; align-items:start; padding:12px;}
@@ -141,12 +149,19 @@
 
     <div class="stats">
       <div class="stat"><b id="stTotal">0</b><span>전체 하객</span></div>
+      <div class="stat groom"><b id="stGroom">0</b><span>신랑 측</span></div>
+      <div class="stat bride"><b id="stBride">0</b><span>신부 측</span></div>
       <div class="stat"><b id="stMsg">0</b><span>메시지 남김</span></div>
-      <div class="stat"><b id="stToday">0</b><span>오늘 입장</span></div>
     </div>
 
     <div class="tools">
       <input type="search" id="q" placeholder="이름이나 메시지로 찾기" aria-label="하객 검색">
+      <select id="sideF" aria-label="구분으로 보기">
+        <option value="">전체</option>
+        <option value="groom">신랑 측</option>
+        <option value="bride">신부 측</option>
+        <option value="none">구분 없음</option>
+      </select>
       <button class="btn" id="copyBtn" type="button">명단 복사</button>
       <button class="btn" id="csvBtn" type="button">엑셀용 저장</button>
     </div>
@@ -203,16 +218,20 @@ function shade(h, f){ const c = hex2rgb(h); return rgb2hex(c[0]*f, c[1]*f, c[2]*
 function lighten(h, a){ const c = hex2rgb(h); return rgb2hex(c[0]+(255-c[0])*a, c[1]+(255-c[1])*a, c[2]+(255-c[2])*a); }
 function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1 | a); t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t; return ((t ^ t>>>14) >>> 0) / 4294967296; }; }
 
-const SKINS = ['#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
-const HAIRS = ['#1b1b1f','#3b2418','#6b4226','#a9742f','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#6fa8dc'];
-const TOPS  = ['#2b3350','#1f1f2e','#f6f6f6','#c0392b','#e8919c','#6fa8dc','#8fd18a','#ffc15e','#b9a4f0','#8a5a3c'];
-const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리'];
-const OUTFITS = ['정장','턱시도','원피스','캐주얼'];
+const SKINS = ['#fff0e0','#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
+const HAIRS = ['#1b1b1f','#3b2418','#5a2a1e','#6b4226','#a9742f','#c9a27a','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#8e6bbf','#6fa8dc'];
+const TOPS  = ['#1f1f2e','#2b3350','#f6f6f6','#e8d3b0','#8a5a3c','#7a2638','#c0392b','#f2a65a','#ffc15e','#8fd18a','#6b7a3a','#7fd6c2','#a9d4f5','#6fa8dc','#b9a4f0','#e8919c'];
+const PANTS = ['#22202a','#2b3350','#3d5a99','#7a7f8a','#d8c8a8','#5a3a2a','#f2f2ee'];
+const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리','포니테일','곱슬머리','양갈래','반삭'];
+const OUTFITS = ['정장','턱시도','원피스','캐주얼','한복','후드티','블라우스·치마','니트'];
+const ACCS = ['없음','안경','선글라스','리본','꽃 머리핀','비니','베레모'];
+const SIDES = { groom:'신랑 측', bride:'신부 측' };
 const HEXRE = /^#[0-9a-fA-F]{6}$/;
+const NO_PANTS = [2, 4, 6];     // 원피스, 한복, 치마는 하의 색이 필요 없음
 
 const SW = 22, SH = 36, FEET = 33;
 
-function defaultLook(){ return { s:SKINS[1], h:HAIRS[1], t:TOPS[0], hs:0, o:0, g:0, v:0 }; }
+function defaultLook(){ return { s:SKINS[2], h:HAIRS[1], t:TOPS[1], p:'', hs:0, o:0, a:0, v:0, side:'' }; }
 function clampInt(v, lo, hi, d){ v = parseInt(v, 10); return (isNaN(v) || v < lo || v > hi) ? d : v; }
 function cleanLook(r){
   const d = defaultLook();
@@ -221,15 +240,20 @@ function cleanLook(r){
     s: HEXRE.test(r.s) ? r.s : d.s,
     h: HEXRE.test(r.h) ? r.h : d.h,
     t: HEXRE.test(r.t) ? r.t : d.t,
-    hs: clampInt(r.hs, 0, 4, 0),
-    o: clampInt(r.o, 0, 3, 0),
-    g: r.g ? 1 : 0,
-    v: 0
+    p: HEXRE.test(r.p) ? r.p : '',
+    hs: clampInt(r.hs, 0, HAIR_STYLES.length - 1, 0),
+    o: clampInt(r.o, 0, OUTFITS.length - 1, 0),
+    a: clampInt(r.a, 0, ACCS.length - 1, r.g ? 1 : 0),
+    v: 0,
+    side: (r.side === 'groom' || r.side === 'bride') ? r.side : ''
   };
 }
 function randomLook(rnd){
   const p = a => a[Math.floor(rnd() * a.length)];
-  return { s:p(SKINS), h:p(HAIRS.slice(0,7)), t:p(TOPS), hs:Math.floor(rnd()*5), o:Math.floor(rnd()*4), g:rnd()<0.25?1:0, v:0 };
+  return { s:p(SKINS), h:p(HAIRS.slice(0, 9)), t:p(TOPS), p: rnd() < 0.5 ? '' : p(PANTS),
+           hs:Math.floor(rnd()*HAIR_STYLES.length), o:Math.floor(rnd()*OUTFITS.length),
+           a: rnd() < 0.55 ? 0 : 1 + Math.floor(rnd()*(ACCS.length-1)), v:0,
+           side: rnd() < 0.5 ? 'groom' : 'bride' };
 }
 
 function buildSprite(look, frame){
@@ -237,21 +261,31 @@ function buildSprite(look, frame){
   const g = c.getContext('2d');
   const R = (x,y,w,h,col) => { g.fillStyle = col; g.fillRect(x,y,w,h); };
   const skin = look.s, skinSh = shade(skin, .86);
-  const hair = look.h, hairHi = lighten(hair, .38);
+  const hair = look.h, hairHi = lighten(hair, .38), hairSh = shade(hair, .8);
   const top = look.t, topSh = shade(top, .78), topHi = lighten(top, .22);
-  const o = look.o, hs = look.hs, w1 = frame === 1;
-  const dress = (o === 2);
-  const pants = (o === 3) ? '#3d5a99' : shade(top, .85);
-  const shoe = (o === 3) ? '#f4f4f4' : '#2b2433';
+  const o = look.o, hs = look.hs, a = look.a || 0, w1 = frame === 1;
+  const skirtLike = (o === 2 || o === 4);           // 원피스, 한복: 다리가 안 보임
+  const autoPants = (o === 3 || o === 5) ? '#3d5a99' : (o === 7 ? '#2b2433' : shade(top, .85));
+  const pants = look.p || autoPants;
+  const shoe = (o === 3 || o === 5) ? '#f4f4f4' : '#2b2433';
+  const cream = '#fbf6ec';
 
   /* 뒤쪽 머리카락 */
   if(hs === 2) R(4,6,14,19,hair);
   if(hs === 3) R(4,6,14,10,hair);
+  if(hs === 5){ R(16,5,3,3,hair); R(17,8,3,9,hair); R(18,17,2,2,hairSh); R(16,6,1,1,'#e84a6a'); }
+  if(hs === 6){ R(3,5,16,11,hair); R(2,8,1,6,hair); R(19,8,1,6,hair); }
+  if(hs === 7){ R(1,9,4,9,hair); R(17,9,4,9,hair); R(1,17,3,2,hairSh); R(18,17,3,2,hairSh); R(3,9,2,2,'#e84a6a'); R(17,9,2,2,'#e84a6a'); }
 
   /* 다리와 신발 */
-  if(dress){
-    R(8,31,2,1,skin); R(12,31,2,1,skin);
-    R(7,w1?31:32,3,1,'#3a2a3a'); R(12,32,3,1,'#3a2a3a');
+  if(skirtLike){
+    const sh = o === 4 ? '#f6f0e6' : '#3a2a3a';
+    R(8,31,2,1,o === 4 ? sh : skin); R(12,31,2,1,o === 4 ? sh : skin);
+    R(7,w1?31:32,3,1,sh); R(12,32,3,1,sh);
+  } else if(o === 6){
+    const ly = w1 ? 1 : 0;
+    R(8,29,2,2-ly,skin); R(12,29,2,2,skin);
+    R(7,31-ly,3,1,shoe); R(12,31,3,1,shoe);
   } else {
     const ly = w1 ? 1 : 0;
     R(8,26,3,5-ly,pants); R(7,31-ly,4,2,shoe);
@@ -261,24 +295,52 @@ function buildSprite(look, frame){
 
   /* 몸통과 팔 */
   const swL = w1 ? 1 : 0, swR = w1 ? 1 : 0;
-  if(dress){
+  if(o === 2){                                   /* 원피스 */
     R(7,18,8,6,top); R(7,23,8,1,topSh); R(9,18,4,1,skin);
     const rows = [[6,10],[6,10],[5,12],[5,12],[4,14],[4,14],[4,14]];
     rows.forEach((r,i) => R(r[0],24+i,r[1],1,top));
     R(4,30,14,1,topSh); R(8,26,1,4,topSh); R(13,26,1,4,topSh); R(14,19,1,4,topSh);
     R(5,19,2,2,top); R(15,19,2,2,top);
     R(5,21,2,6-swL,skin); R(15,21,2,6+swR,skin);
+  } else if(o === 4){                            /* 한복: 흰 저고리 + 색 치마 */
+    const rows = [[6,10],[5,12],[5,12],[4,14],[4,14],[4,14],[3,16],[3,16],[3,16]];
+    rows.forEach((r,i) => R(r[0],22+i,r[1],1,top));
+    R(3,30,16,1,topSh); R(7,24,1,6,topSh); R(14,24,1,6,topSh); R(10,23,1,7,topHi);
+    R(7,18,8,4,cream); R(7,21,8,1,'#e9dfcf');
+    R(9,18,1,3,'#ffffff'); R(12,18,1,3,'#ffffff'); R(10,18,2,1,'#ffffff');
+    R(11,20,3,1,topSh); R(12,21,1,3,topSh); R(13,21,1,2,topSh);
+    R(5,19,2,5-swL,cream); R(15,19,2,5+swR,cream);
+    R(5,23-swL,2,1,top); R(15,23+swR,2,1,top);
+    R(5,24-swL,2,2,skin); R(15,24+swR,2,2,skin);
+  } else if(o === 6){                            /* 블라우스 + 치마 */
+    R(7,18,8,6,cream); R(14,19,1,4,'#e9dfcf');
+    R(9,18,1,2,'#ffffff'); R(12,18,1,2,'#ffffff'); R(10,18,2,1,skin);
+    R(10,20,2,1,'#e9dfcf'); R(10,22,2,1,'#e9dfcf');
+    R(5,19,2,6-swL,cream); R(15,19,2,6+swR,cream);
+    R(5,25-swL,2,2,skin); R(15,25+swR,2,2,skin);
+    const rows = [[7,8],[6,10],[6,10],[5,12],[5,12]];
+    rows.forEach((r,i) => R(r[0],24+i,r[1],1,top));
+    R(7,24,8,1,topSh); R(9,26,1,3,topSh); R(12,26,1,3,topSh);
   } else {
     R(7,18,8,8,top); R(14,19,1,6,topSh); R(8,18,6,1,topSh);
     R(5,19,2,6-swL,top); R(15,19,2,6+swR,top);
     R(5,25-swL,2,2,skin); R(15,25+swR,2,2,skin);
-    if(o === 0){
+    if(o === 0){                                 /* 정장 */
       R(10,18,2,6,'#f4f4f4'); R(10,20,2,4,'#c0392b'); R(10,19,2,1,'#8f2a20');
       R(9,18,1,4,topSh); R(12,18,1,4,topSh);
-    } else if(o === 1){
+    } else if(o === 1){                          /* 턱시도 */
       R(9,18,4,5,'#f6f6f6'); R(9,18,4,2,'#2a2a2a'); R(10,18,2,1,'#c0392b'); R(7,23,8,1,'#222222');
       R(8,18,1,5,topSh); R(13,18,1,5,topSh);
-    } else {
+    } else if(o === 5){                          /* 후드티 */
+      R(7,17,8,2,topSh); R(8,18,6,1,top);
+      R(10,19,1,2,'#f4f4f4'); R(12,19,1,2,'#f4f4f4');
+      R(8,22,6,2,topSh); R(8,22,6,1,top);
+      R(5,24-swL,2,1,topSh); R(15,24+swR,2,1,topSh);
+    } else if(o === 7){                          /* 니트 (터틀넥) */
+      R(8,17,6,2,top); R(8,17,6,1,topHi);
+      for(let y=19;y<26;y+=2) R(7,y,8,1,topHi);
+      R(5,24-swL,2,1,topHi); R(15,24+swR,2,1,topHi);
+    } else {                                     /* 캐주얼 */
       R(9,18,4,1,topSh); R(12,21,2,2,topHi);
     }
   }
@@ -291,25 +353,50 @@ function buildSprite(look, frame){
   R(10,15,2,1,'#b5524a');
 
   /* 앞쪽 머리카락 */
-  R(7,3,8,1,hair); R(6,4,10,1,hair); R(5,5,12,2,hair);
-  R(8,4,3,1,hairHi);
-  if(hs === 0 || hs === 2 || hs === 4){
-    R(5,7,4,1,hair); R(13,7,4,1,hair); R(5,8,2,1,hair); R(15,8,2,1,hair); R(5,9,1,2,hair); R(16,9,1,2,hair);
-  } else if(hs === 1){
-    R(5,7,12,1,hair); R(5,8,6,1,hair); R(5,9,3,1,hair); R(16,8,1,3,hair);
+  if(hs === 8){                                  /* 반삭 */
+    R(7,4,8,1,hairSh); R(5,5,12,2,hairSh); R(5,7,1,2,hairSh); R(16,7,1,2,hairSh);
+    for(let i=6;i<16;i+=3) R(i,5,1,1,skinSh);
   } else {
-    R(5,7,12,1,hair); R(5,8,3,1,hair); R(14,8,3,1,hair);
+    R(7,3,8,1,hair); R(6,4,10,1,hair); R(5,5,12,2,hair);
+    R(8,4,3,1,hairHi);
+    if(hs === 0 || hs === 2 || hs === 4 || hs === 5){
+      R(5,7,4,1,hair); R(13,7,4,1,hair); R(5,8,2,1,hair); R(15,8,2,1,hair); R(5,9,1,2,hair); R(16,9,1,2,hair);
+    } else if(hs === 1){
+      R(5,7,12,1,hair); R(5,8,6,1,hair); R(5,9,3,1,hair); R(16,8,1,3,hair);
+    } else if(hs === 6){
+      R(4,4,14,3,hair); R(5,7,3,2,hair); R(9,7,2,1,hair); R(12,7,2,1,hair); R(15,7,3,2,hair);
+      R(4,8,1,6,hair); R(17,8,1,6,hair);
+      [[6,3],[10,2],[14,3],[5,6],[16,6],[8,5],[12,5]].forEach(q => R(q[0],q[1],1,1,hairHi));
+    } else {
+      R(5,7,12,1,hair); R(5,8,3,1,hair); R(14,8,3,1,hair);
+    }
+    if(hs === 4){ R(9,1,4,1,hair); R(8,2,6,1,hair); R(10,1,1,1,hairHi); }
+    if(hs === 2){ R(4,7,2,16,hair); R(16,7,2,16,hair); R(4,22,2,1,hairSh); R(16,22,2,1,hairSh); }
+    if(hs === 3){ R(4,7,2,9,hair); R(16,7,2,9,hair); R(4,15,2,1,hairSh); R(16,15,2,1,hairSh); }
+    if(hs === 7){ R(4,7,1,3,hair); R(17,7,1,3,hair); }
   }
-  if(hs === 4){ R(9,1,4,1,hair); R(8,2,6,1,hair); R(10,1,1,1,hairHi); }
-  if(hs === 2){ R(4,7,2,16,hair); R(16,7,2,16,hair); R(4,22,2,1,shade(hair,.8)); R(16,22,2,1,shade(hair,.8)); }
-  if(hs === 3){ R(4,7,2,9,hair); R(16,7,2,9,hair); R(4,15,2,1,shade(hair,.8)); R(16,15,2,1,shade(hair,.8)); }
 
-  /* 안경 */
-  if(look.g){
+  /* 소품 */
+  if(a === 1){                                   /* 안경 */
     const f = '#3b3340';
     R(6,10,4,1,f); R(6,14,4,1,f); R(6,11,1,3,f); R(9,11,1,3,f);
     R(12,10,4,1,f); R(12,14,4,1,f); R(12,11,1,3,f); R(15,11,1,3,f);
     R(10,11,2,1,f);
+  } else if(a === 2){                            /* 선글라스 */
+    R(6,10,4,4,'#1b1b22'); R(12,10,4,4,'#1b1b22'); R(10,11,2,1,'#1b1b22');
+    R(5,10,1,1,'#1b1b22'); R(16,10,1,1,'#1b1b22');
+    R(7,11,1,1,'#6a6a7a'); R(13,11,1,1,'#6a6a7a');
+  } else if(a === 3){                            /* 리본 */
+    R(13,2,2,3,'#e84a6a'); R(17,2,2,3,'#e84a6a'); R(15,3,2,1,'#b8304e'); R(13,2,1,1,'#ff8aa5'); R(17,2,1,1,'#ff8aa5');
+  } else if(a === 4){                            /* 꽃 머리핀 */
+    R(15,5,3,1,'#ff9ec0'); R(16,4,1,3,'#ff9ec0'); R(16,5,1,1,'#ffe066'); R(14,7,1,1,'#7aa56d');
+  } else if(a === 5){                            /* 비니 */
+    const bn = shade(top, .95), bnH = lighten(top, .3);
+    R(6,1,10,1,bn); R(5,2,12,4,bn); R(4,5,14,2,bnH);
+    for(let x=6;x<17;x+=2) R(x,2,1,3,shade(bn,.85));
+    R(10,0,2,1,bnH);
+  } else if(a === 6){                            /* 베레모 */
+    R(6,2,11,1,'#7a2638'); R(4,3,14,2,'#7a2638'); R(4,5,10,1,'#5e1c2b'); R(11,1,1,1,'#5e1c2b'); R(7,3,3,1,'#9a3a50');
   }
 
   /* 면사포 (신부 전용) */
@@ -333,7 +420,7 @@ function buildSprite(look, frame){
 
 const spriteCache = new Map();
 function getSprite(look, frame, flip){
-  const key = [look.s, look.h, look.t, look.hs, look.o, look.g, look.v, frame, flip ? 1 : 0].join('|');
+  const key = [look.s, look.h, look.t, look.p, look.hs, look.o, look.a, look.v, frame, flip ? 1 : 0].join('|');
   let s = spriteCache.get(key);
   if(s) return s;
   const base = buildSprite(look, frame);
@@ -409,7 +496,8 @@ function startList(){
     all = snap.docs.map(doc => {
       const d = doc.data();
       const c = d.createdAt;
-      return { id: doc.id, name: d.name || '이름없음', message: d.message || '', look: cleanLook(d.look),
+      const lk = cleanLook(d.look);
+      return { id: doc.id, name: d.name || '이름없음', message: d.message || '', look: lk, side: lk.side,
                date: c && typeof c.toDate === 'function' ? c.toDate() : null };
     });
     for(const id of Array.from(selected)) if(!all.some(g => g.id === id)) selected.delete(id);
@@ -426,20 +514,25 @@ function stopList(){
 
 function visible(){
   const q = $('q').value.trim().toLowerCase();
-  if(!q) return all;
-  return all.filter(g => g.name.toLowerCase().includes(q) || g.message.toLowerCase().includes(q));
+  const sf = $('sideF').value;
+  return all.filter(g => {
+    if(sf === 'none' ? g.side : (sf && g.side !== sf)) return false;
+    return !q || g.name.toLowerCase().includes(q) || g.message.toLowerCase().includes(q);
+  });
 }
+function sideLabel(s){ return s ? SIDES[s] : ''; }
 
 function render(){
   const now = new Date();
   $('stTotal').textContent = all.length;
   $('stMsg').textContent = all.filter(g => g.message).length;
-  $('stToday').textContent = all.filter(g => sameDay(g.date, now)).length;
+  $('stGroom').textContent = all.filter(g => g.side === 'groom').length;
+  $('stBride').textContent = all.filter(g => g.side === 'bride').length;
 
   const list = visible();
   const rows = $('rows');
   rows.innerHTML = '';
-  $('headText').textContent = $('q').value.trim() ? '찾은 하객 ' + list.length + '명' : '최신순 ' + list.length + '명';
+  $('headText').textContent = ($('q').value.trim() || $('sideF').value) ? '찾은 하객 ' + list.length + '명' : '최신순 ' + list.length + '명';
   if(!list.length){
     const e = document.createElement('div'); e.className = 'empty';
     e.innerHTML = all.length ? '찾는 하객이 없어요.' : '아직 방명록이 없어요.<br>하객이 QR로 들어와 미니미를 만들면 여기에 나타나요.';
@@ -459,6 +552,7 @@ function render(){
 
     const who = document.createElement('div'); who.className = 'who';
     const n = document.createElement('p'); n.className = 'name'; n.textContent = g.name;
+    if(g.side){ const bd = document.createElement('span'); bd.className = 'badge ' + g.side; bd.textContent = SIDES[g.side]; n.appendChild(bd); }
     const m = document.createElement('p'); m.className = 'msg' + (g.message ? '' : ' none'); m.textContent = g.message || '메시지 없음';
     const w = document.createElement('p'); w.className = 'when'; w.textContent = fmt(g.date);
     who.append(n, m, w);
@@ -488,6 +582,7 @@ function render(){
 }
 
 $('q').addEventListener('input', () => { confirmId = null; render(); });
+$('sideF').addEventListener('change', () => { confirmId = null; render(); });
 $('selAll').addEventListener('change', e => {
   const vis = visible().map(g => g.id);
   vis.forEach(id => e.target.checked ? selected.add(id) : selected.delete(id));
@@ -527,7 +622,7 @@ async function removeIds(ids){
 
 /* ---------- 명단 복사 / 엑셀용 저장 ---------- */
 function listText(){
-  return all.slice().reverse().map((g, i) => (i+1) + '. ' + g.name + (g.message ? ' - ' + g.message : '')).join('\n');
+  return visible().slice().reverse().map((g, i) => (i+1) + '. ' + g.name + (g.side ? ' (' + SIDES[g.side] + ')' : '') + (g.message ? ' - ' + g.message : '')).join('\n');
 }
 $('copyBtn').addEventListener('click', async () => {
   const text = listText();
@@ -544,8 +639,8 @@ $('copyBtn').addEventListener('click', async () => {
 $('csvBtn').addEventListener('click', () => {
   if(!all.length){ toast('저장할 명단이 없어요.'); return; }
   const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
-  const lines = [['번호','이름','축하 메시지','남긴 시각'].map(esc).join(',')];
-  all.slice().reverse().forEach((g, i) => lines.push([i+1, g.name, g.message, fmt(g.date)].map(esc).join(',')));
+  const lines = [['번호','이름','구분','축하 메시지','남긴 시각'].map(esc).join(',')];
+  all.slice().reverse().forEach((g, i) => lines.push([i+1, g.name, sideLabel(g.side), g.message, fmt(g.date)].map(esc).join(',')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

@@ -19,6 +19,8 @@
     --ink:#1c1424;
     --panel:rgba(28,20,36,.82);
     --line:rgba(246,239,227,.2);
+    --groom:#4f86ea;
+    --bride:#ee7fa2;
     --font-title:"Jua", "Gowun Dodum", sans-serif;
     --font-body:"Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     --font-pixel:"Press Start 2P", monospace;
@@ -92,6 +94,16 @@
     background:#fff; border-right:2px solid var(--ink); border-bottom:2px solid var(--ink);
     transform:translate(-50%,-5px) rotate(45deg);
   }
+  .bubble.groom, .bubble.bride, .bubble.couple{border-width:3px; padding:5px 10px 6px;}
+  .bubble.groom{border-color:var(--groom); box-shadow:2px 2px 0 rgba(79,134,234,.45);}
+  .bubble.bride{border-color:var(--bride); box-shadow:2px 2px 0 rgba(238,127,162,.45);}
+  .bubble.couple{border-color:var(--gold);}
+  .bubble.groom::after{border-right:3px solid var(--groom); border-bottom:3px solid var(--groom);}
+  .bubble.bride::after{border-right:3px solid var(--bride); border-bottom:3px solid var(--bride);}
+  .bubble.couple::after{border-right:3px solid var(--gold); border-bottom:3px solid var(--gold);}
+  .bubble .tag{display:block; font-size:10px; line-height:1.2; margin-bottom:2px; letter-spacing:.02em;}
+  .bubble.groom .tag{color:var(--groom);}
+  .bubble.bride .tag{color:#d9567f;}
 
   /* 하단 버튼 */
   .uiBottom{
@@ -160,6 +172,16 @@
   }
   .chip.on{background:var(--gold); color:var(--ink);}
   .sw{width:32px; height:32px; border-radius:50%; border:3px solid rgba(255,255,255,.25); cursor:pointer; padding:0;}
+  .sw.auto{background:linear-gradient(135deg, #2b3350 0 50%, #3d5a99 50% 100%); color:#fff; font-family:var(--font-title); font-size:10px; line-height:1;}
+  .sideRow{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .sideBtn{
+    font-family:var(--font-title); font-size:16px; padding:11px 8px; border-radius:12px; cursor:pointer;
+    border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:var(--cream);
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  .sideBtn small{font-family:var(--font-body); font-size:12px; opacity:.8;}
+  .sideBtn.groom.on{border-color:var(--groom); background:rgba(79,134,234,.25);}
+  .sideBtn.bride.on{border-color:var(--bride); background:rgba(238,127,162,.25);}
   .sw.on{border-color:var(--cream); box-shadow:0 0 0 2px var(--gold);}
   label.fl{font-size:12px; color:rgba(246,239,227,.78); display:block; margin:14px 0 6px;}
   input[type=text], textarea{
@@ -234,7 +256,15 @@
         <div class="grp"><span>피부색</span><div class="row" id="skinRow"></div></div>
         <div class="grp"><span>옷</span><div class="row" id="outfitRow"></div></div>
         <div class="grp"><span>옷 색</span><div class="row" id="topRow"></div></div>
-        <div class="grp"><span>안경</span><div class="row"><button class="chip" id="glassBtn" type="button" aria-pressed="false">안경 쓰기</button></div></div>
+        <div class="grp" id="pantsGrp"><span>하의 색</span><div class="row" id="pantsRow"></div></div>
+        <div class="grp"><span>소품</span><div class="row" id="accRow"></div></div>
+
+        <div class="grp"><span>누구의 하객인가요?</span>
+          <div class="sideRow" id="sideRow">
+            <button type="button" class="sideBtn groom" data-side="groom" aria-pressed="false">신랑 측<small id="sideGroomName"></small></button>
+            <button type="button" class="sideBtn bride" data-side="bride" aria-pressed="false">신부 측<small id="sideBrideName"></small></button>
+          </div>
+        </div>
 
         <label class="fl" for="nameInput">이름</label>
         <input type="text" id="nameInput" maxlength="12" placeholder="예: 김지은">
@@ -305,16 +335,20 @@ function shade(h, f){ const c = hex2rgb(h); return rgb2hex(c[0]*f, c[1]*f, c[2]*
 function lighten(h, a){ const c = hex2rgb(h); return rgb2hex(c[0]+(255-c[0])*a, c[1]+(255-c[1])*a, c[2]+(255-c[2])*a); }
 function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1 | a); t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t; return ((t ^ t>>>14) >>> 0) / 4294967296; }; }
 
-const SKINS = ['#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
-const HAIRS = ['#1b1b1f','#3b2418','#6b4226','#a9742f','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#6fa8dc'];
-const TOPS  = ['#2b3350','#1f1f2e','#f6f6f6','#c0392b','#e8919c','#6fa8dc','#8fd18a','#ffc15e','#b9a4f0','#8a5a3c'];
-const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리'];
-const OUTFITS = ['정장','턱시도','원피스','캐주얼'];
+const SKINS = ['#fff0e0','#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
+const HAIRS = ['#1b1b1f','#3b2418','#5a2a1e','#6b4226','#a9742f','#c9a27a','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#8e6bbf','#6fa8dc'];
+const TOPS  = ['#1f1f2e','#2b3350','#f6f6f6','#e8d3b0','#8a5a3c','#7a2638','#c0392b','#f2a65a','#ffc15e','#8fd18a','#6b7a3a','#7fd6c2','#a9d4f5','#6fa8dc','#b9a4f0','#e8919c'];
+const PANTS = ['#22202a','#2b3350','#3d5a99','#7a7f8a','#d8c8a8','#5a3a2a','#f2f2ee'];
+const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리','포니테일','곱슬머리','양갈래','반삭'];
+const OUTFITS = ['정장','턱시도','원피스','캐주얼','한복','후드티','블라우스·치마','니트'];
+const ACCS = ['없음','안경','선글라스','리본','꽃 머리핀','비니','베레모'];
+const SIDES = { groom:'신랑 측', bride:'신부 측' };
 const HEXRE = /^#[0-9a-fA-F]{6}$/;
+const NO_PANTS = [2, 4, 6];     // 원피스, 한복, 치마는 하의 색이 필요 없음
 
 const SW = 22, SH = 36, FEET = 33;
 
-function defaultLook(){ return { s:SKINS[1], h:HAIRS[1], t:TOPS[0], hs:0, o:0, g:0, v:0 }; }
+function defaultLook(){ return { s:SKINS[2], h:HAIRS[1], t:TOPS[1], p:'', hs:0, o:0, a:0, v:0, side:'' }; }
 function clampInt(v, lo, hi, d){ v = parseInt(v, 10); return (isNaN(v) || v < lo || v > hi) ? d : v; }
 function cleanLook(r){
   const d = defaultLook();
@@ -323,15 +357,20 @@ function cleanLook(r){
     s: HEXRE.test(r.s) ? r.s : d.s,
     h: HEXRE.test(r.h) ? r.h : d.h,
     t: HEXRE.test(r.t) ? r.t : d.t,
-    hs: clampInt(r.hs, 0, 4, 0),
-    o: clampInt(r.o, 0, 3, 0),
-    g: r.g ? 1 : 0,
-    v: 0
+    p: HEXRE.test(r.p) ? r.p : '',
+    hs: clampInt(r.hs, 0, HAIR_STYLES.length - 1, 0),
+    o: clampInt(r.o, 0, OUTFITS.length - 1, 0),
+    a: clampInt(r.a, 0, ACCS.length - 1, r.g ? 1 : 0),
+    v: 0,
+    side: (r.side === 'groom' || r.side === 'bride') ? r.side : ''
   };
 }
 function randomLook(rnd){
   const p = a => a[Math.floor(rnd() * a.length)];
-  return { s:p(SKINS), h:p(HAIRS.slice(0,7)), t:p(TOPS), hs:Math.floor(rnd()*5), o:Math.floor(rnd()*4), g:rnd()<0.25?1:0, v:0 };
+  return { s:p(SKINS), h:p(HAIRS.slice(0, 9)), t:p(TOPS), p: rnd() < 0.5 ? '' : p(PANTS),
+           hs:Math.floor(rnd()*HAIR_STYLES.length), o:Math.floor(rnd()*OUTFITS.length),
+           a: rnd() < 0.55 ? 0 : 1 + Math.floor(rnd()*(ACCS.length-1)), v:0,
+           side: rnd() < 0.5 ? 'groom' : 'bride' };
 }
 
 function buildSprite(look, frame){
@@ -339,21 +378,31 @@ function buildSprite(look, frame){
   const g = c.getContext('2d');
   const R = (x,y,w,h,col) => { g.fillStyle = col; g.fillRect(x,y,w,h); };
   const skin = look.s, skinSh = shade(skin, .86);
-  const hair = look.h, hairHi = lighten(hair, .38);
+  const hair = look.h, hairHi = lighten(hair, .38), hairSh = shade(hair, .8);
   const top = look.t, topSh = shade(top, .78), topHi = lighten(top, .22);
-  const o = look.o, hs = look.hs, w1 = frame === 1;
-  const dress = (o === 2);
-  const pants = (o === 3) ? '#3d5a99' : shade(top, .85);
-  const shoe = (o === 3) ? '#f4f4f4' : '#2b2433';
+  const o = look.o, hs = look.hs, a = look.a || 0, w1 = frame === 1;
+  const skirtLike = (o === 2 || o === 4);           // 원피스, 한복: 다리가 안 보임
+  const autoPants = (o === 3 || o === 5) ? '#3d5a99' : (o === 7 ? '#2b2433' : shade(top, .85));
+  const pants = look.p || autoPants;
+  const shoe = (o === 3 || o === 5) ? '#f4f4f4' : '#2b2433';
+  const cream = '#fbf6ec';
 
   /* 뒤쪽 머리카락 */
   if(hs === 2) R(4,6,14,19,hair);
   if(hs === 3) R(4,6,14,10,hair);
+  if(hs === 5){ R(16,5,3,3,hair); R(17,8,3,9,hair); R(18,17,2,2,hairSh); R(16,6,1,1,'#e84a6a'); }
+  if(hs === 6){ R(3,5,16,11,hair); R(2,8,1,6,hair); R(19,8,1,6,hair); }
+  if(hs === 7){ R(1,9,4,9,hair); R(17,9,4,9,hair); R(1,17,3,2,hairSh); R(18,17,3,2,hairSh); R(3,9,2,2,'#e84a6a'); R(17,9,2,2,'#e84a6a'); }
 
   /* 다리와 신발 */
-  if(dress){
-    R(8,31,2,1,skin); R(12,31,2,1,skin);
-    R(7,w1?31:32,3,1,'#3a2a3a'); R(12,32,3,1,'#3a2a3a');
+  if(skirtLike){
+    const sh = o === 4 ? '#f6f0e6' : '#3a2a3a';
+    R(8,31,2,1,o === 4 ? sh : skin); R(12,31,2,1,o === 4 ? sh : skin);
+    R(7,w1?31:32,3,1,sh); R(12,32,3,1,sh);
+  } else if(o === 6){
+    const ly = w1 ? 1 : 0;
+    R(8,29,2,2-ly,skin); R(12,29,2,2,skin);
+    R(7,31-ly,3,1,shoe); R(12,31,3,1,shoe);
   } else {
     const ly = w1 ? 1 : 0;
     R(8,26,3,5-ly,pants); R(7,31-ly,4,2,shoe);
@@ -363,24 +412,52 @@ function buildSprite(look, frame){
 
   /* 몸통과 팔 */
   const swL = w1 ? 1 : 0, swR = w1 ? 1 : 0;
-  if(dress){
+  if(o === 2){                                   /* 원피스 */
     R(7,18,8,6,top); R(7,23,8,1,topSh); R(9,18,4,1,skin);
     const rows = [[6,10],[6,10],[5,12],[5,12],[4,14],[4,14],[4,14]];
     rows.forEach((r,i) => R(r[0],24+i,r[1],1,top));
     R(4,30,14,1,topSh); R(8,26,1,4,topSh); R(13,26,1,4,topSh); R(14,19,1,4,topSh);
     R(5,19,2,2,top); R(15,19,2,2,top);
     R(5,21,2,6-swL,skin); R(15,21,2,6+swR,skin);
+  } else if(o === 4){                            /* 한복: 흰 저고리 + 색 치마 */
+    const rows = [[6,10],[5,12],[5,12],[4,14],[4,14],[4,14],[3,16],[3,16],[3,16]];
+    rows.forEach((r,i) => R(r[0],22+i,r[1],1,top));
+    R(3,30,16,1,topSh); R(7,24,1,6,topSh); R(14,24,1,6,topSh); R(10,23,1,7,topHi);
+    R(7,18,8,4,cream); R(7,21,8,1,'#e9dfcf');
+    R(9,18,1,3,'#ffffff'); R(12,18,1,3,'#ffffff'); R(10,18,2,1,'#ffffff');
+    R(11,20,3,1,topSh); R(12,21,1,3,topSh); R(13,21,1,2,topSh);
+    R(5,19,2,5-swL,cream); R(15,19,2,5+swR,cream);
+    R(5,23-swL,2,1,top); R(15,23+swR,2,1,top);
+    R(5,24-swL,2,2,skin); R(15,24+swR,2,2,skin);
+  } else if(o === 6){                            /* 블라우스 + 치마 */
+    R(7,18,8,6,cream); R(14,19,1,4,'#e9dfcf');
+    R(9,18,1,2,'#ffffff'); R(12,18,1,2,'#ffffff'); R(10,18,2,1,skin);
+    R(10,20,2,1,'#e9dfcf'); R(10,22,2,1,'#e9dfcf');
+    R(5,19,2,6-swL,cream); R(15,19,2,6+swR,cream);
+    R(5,25-swL,2,2,skin); R(15,25+swR,2,2,skin);
+    const rows = [[7,8],[6,10],[6,10],[5,12],[5,12]];
+    rows.forEach((r,i) => R(r[0],24+i,r[1],1,top));
+    R(7,24,8,1,topSh); R(9,26,1,3,topSh); R(12,26,1,3,topSh);
   } else {
     R(7,18,8,8,top); R(14,19,1,6,topSh); R(8,18,6,1,topSh);
     R(5,19,2,6-swL,top); R(15,19,2,6+swR,top);
     R(5,25-swL,2,2,skin); R(15,25+swR,2,2,skin);
-    if(o === 0){
+    if(o === 0){                                 /* 정장 */
       R(10,18,2,6,'#f4f4f4'); R(10,20,2,4,'#c0392b'); R(10,19,2,1,'#8f2a20');
       R(9,18,1,4,topSh); R(12,18,1,4,topSh);
-    } else if(o === 1){
+    } else if(o === 1){                          /* 턱시도 */
       R(9,18,4,5,'#f6f6f6'); R(9,18,4,2,'#2a2a2a'); R(10,18,2,1,'#c0392b'); R(7,23,8,1,'#222222');
       R(8,18,1,5,topSh); R(13,18,1,5,topSh);
-    } else {
+    } else if(o === 5){                          /* 후드티 */
+      R(7,17,8,2,topSh); R(8,18,6,1,top);
+      R(10,19,1,2,'#f4f4f4'); R(12,19,1,2,'#f4f4f4');
+      R(8,22,6,2,topSh); R(8,22,6,1,top);
+      R(5,24-swL,2,1,topSh); R(15,24+swR,2,1,topSh);
+    } else if(o === 7){                          /* 니트 (터틀넥) */
+      R(8,17,6,2,top); R(8,17,6,1,topHi);
+      for(let y=19;y<26;y+=2) R(7,y,8,1,topHi);
+      R(5,24-swL,2,1,topHi); R(15,24+swR,2,1,topHi);
+    } else {                                     /* 캐주얼 */
       R(9,18,4,1,topSh); R(12,21,2,2,topHi);
     }
   }
@@ -393,25 +470,50 @@ function buildSprite(look, frame){
   R(10,15,2,1,'#b5524a');
 
   /* 앞쪽 머리카락 */
-  R(7,3,8,1,hair); R(6,4,10,1,hair); R(5,5,12,2,hair);
-  R(8,4,3,1,hairHi);
-  if(hs === 0 || hs === 2 || hs === 4){
-    R(5,7,4,1,hair); R(13,7,4,1,hair); R(5,8,2,1,hair); R(15,8,2,1,hair); R(5,9,1,2,hair); R(16,9,1,2,hair);
-  } else if(hs === 1){
-    R(5,7,12,1,hair); R(5,8,6,1,hair); R(5,9,3,1,hair); R(16,8,1,3,hair);
+  if(hs === 8){                                  /* 반삭 */
+    R(7,4,8,1,hairSh); R(5,5,12,2,hairSh); R(5,7,1,2,hairSh); R(16,7,1,2,hairSh);
+    for(let i=6;i<16;i+=3) R(i,5,1,1,skinSh);
   } else {
-    R(5,7,12,1,hair); R(5,8,3,1,hair); R(14,8,3,1,hair);
+    R(7,3,8,1,hair); R(6,4,10,1,hair); R(5,5,12,2,hair);
+    R(8,4,3,1,hairHi);
+    if(hs === 0 || hs === 2 || hs === 4 || hs === 5){
+      R(5,7,4,1,hair); R(13,7,4,1,hair); R(5,8,2,1,hair); R(15,8,2,1,hair); R(5,9,1,2,hair); R(16,9,1,2,hair);
+    } else if(hs === 1){
+      R(5,7,12,1,hair); R(5,8,6,1,hair); R(5,9,3,1,hair); R(16,8,1,3,hair);
+    } else if(hs === 6){
+      R(4,4,14,3,hair); R(5,7,3,2,hair); R(9,7,2,1,hair); R(12,7,2,1,hair); R(15,7,3,2,hair);
+      R(4,8,1,6,hair); R(17,8,1,6,hair);
+      [[6,3],[10,2],[14,3],[5,6],[16,6],[8,5],[12,5]].forEach(q => R(q[0],q[1],1,1,hairHi));
+    } else {
+      R(5,7,12,1,hair); R(5,8,3,1,hair); R(14,8,3,1,hair);
+    }
+    if(hs === 4){ R(9,1,4,1,hair); R(8,2,6,1,hair); R(10,1,1,1,hairHi); }
+    if(hs === 2){ R(4,7,2,16,hair); R(16,7,2,16,hair); R(4,22,2,1,hairSh); R(16,22,2,1,hairSh); }
+    if(hs === 3){ R(4,7,2,9,hair); R(16,7,2,9,hair); R(4,15,2,1,hairSh); R(16,15,2,1,hairSh); }
+    if(hs === 7){ R(4,7,1,3,hair); R(17,7,1,3,hair); }
   }
-  if(hs === 4){ R(9,1,4,1,hair); R(8,2,6,1,hair); R(10,1,1,1,hairHi); }
-  if(hs === 2){ R(4,7,2,16,hair); R(16,7,2,16,hair); R(4,22,2,1,shade(hair,.8)); R(16,22,2,1,shade(hair,.8)); }
-  if(hs === 3){ R(4,7,2,9,hair); R(16,7,2,9,hair); R(4,15,2,1,shade(hair,.8)); R(16,15,2,1,shade(hair,.8)); }
 
-  /* 안경 */
-  if(look.g){
+  /* 소품 */
+  if(a === 1){                                   /* 안경 */
     const f = '#3b3340';
     R(6,10,4,1,f); R(6,14,4,1,f); R(6,11,1,3,f); R(9,11,1,3,f);
     R(12,10,4,1,f); R(12,14,4,1,f); R(12,11,1,3,f); R(15,11,1,3,f);
     R(10,11,2,1,f);
+  } else if(a === 2){                            /* 선글라스 */
+    R(6,10,4,4,'#1b1b22'); R(12,10,4,4,'#1b1b22'); R(10,11,2,1,'#1b1b22');
+    R(5,10,1,1,'#1b1b22'); R(16,10,1,1,'#1b1b22');
+    R(7,11,1,1,'#6a6a7a'); R(13,11,1,1,'#6a6a7a');
+  } else if(a === 3){                            /* 리본 */
+    R(13,2,2,3,'#e84a6a'); R(17,2,2,3,'#e84a6a'); R(15,3,2,1,'#b8304e'); R(13,2,1,1,'#ff8aa5'); R(17,2,1,1,'#ff8aa5');
+  } else if(a === 4){                            /* 꽃 머리핀 */
+    R(15,5,3,1,'#ff9ec0'); R(16,4,1,3,'#ff9ec0'); R(16,5,1,1,'#ffe066'); R(14,7,1,1,'#7aa56d');
+  } else if(a === 5){                            /* 비니 */
+    const bn = shade(top, .95), bnH = lighten(top, .3);
+    R(6,1,10,1,bn); R(5,2,12,4,bn); R(4,5,14,2,bnH);
+    for(let x=6;x<17;x+=2) R(x,2,1,3,shade(bn,.85));
+    R(10,0,2,1,bnH);
+  } else if(a === 6){                            /* 베레모 */
+    R(6,2,11,1,'#7a2638'); R(4,3,14,2,'#7a2638'); R(4,5,10,1,'#5e1c2b'); R(11,1,1,1,'#5e1c2b'); R(7,3,3,1,'#9a3a50');
   }
 
   /* 면사포 (신부 전용) */
@@ -435,7 +537,7 @@ function buildSprite(look, frame){
 
 const spriteCache = new Map();
 function getSprite(look, frame, flip){
-  const key = [look.s, look.h, look.t, look.hs, look.o, look.g, look.v, frame, flip ? 1 : 0].join('|');
+  const key = [look.s, look.h, look.t, look.p, look.hs, look.o, look.a, look.v, frame, flip ? 1 : 0].join('|');
   let s = spriteCache.get(key);
   if(s) return s;
   const base = buildSprite(look, frame);
@@ -961,8 +1063,8 @@ const npcs = [];            // 신부, 신랑
 const pending = [];
 
 function placeCouple(){
-  const brideLook = { s:SKINS[0], h:HAIRS[1], t:'#fdfdfd', hs:2, o:2, g:0, v:1 };
-  const groomLook = { s:SKINS[1], h:HAIRS[0], t:'#1f1f2e', hs:1, o:1, g:0, v:0 };
+  const brideLook = { s:SKINS[1], h:HAIRS[1], t:'#fdfdfd', hs:2, o:2, g:0, v:1 };
+  const groomLook = { s:SKINS[2], h:HAIRS[0], t:'#1f1f2e', hs:1, o:1, g:0, v:0 };
   npcs.length = 0;
   npcs.push({ id:'bride', room:1, name:BRIDE_NAME, look:brideLook, x: world.cx - 14, y: world.archBaseY + 2, message:'와줘서 정말 고마워요!', npc:true, frame:0, face:1 });
   npcs.push({ id:'groom', room:1, name:GROOM_NAME, look:groomLook, x: world.cx + 14, y: world.archBaseY + 2, message:'함께해줘서 고마워요 :)', npc:true, frame:0, face:-1 });
@@ -996,6 +1098,7 @@ function addGuest(id, data){
   const ang = Math.random() * Math.PI * 2, sp = (8 + Math.random()*10) * SPEED;
   guests.set(id, {
     id, room, name: data.name || '이름없음', message: data.message || '', look: cleanLook(data.look),
+    side: cleanLook(data.look).side,
     x: b.minX + Math.random()*(b.maxX-b.minX), y: b.minY + Math.random()*(b.maxY-b.minY),
     vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp*0.6, face: 1, frame: 0, stepT: 0, travel: 0,
     nextTurn: performance.now() + 800 + Math.random()*2500
@@ -1246,7 +1349,15 @@ function showBubble(id, text, ms){
     const el = document.createElement('div'); el.className = 'bubble';
     bubbleLayer.appendChild(el); b = { el, until: 0 }; bubbles.set(id, b);
   }
-  b.el.textContent = text;
+  const e = entityById(id);
+  const side = e && e.side;
+  b.el.className = 'bubble' + (side ? ' ' + side : (e && e.npc ? ' couple' : ''));
+  b.el.textContent = '';
+  if(side){
+    const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = SIDES[side];
+    b.el.appendChild(tag);
+  }
+  b.el.appendChild(document.createTextNode(text));
   b.until = performance.now() + ms;
 }
 function updateBubbles(now){
@@ -1346,7 +1457,7 @@ const nameInput = document.getElementById('nameInput');
 const msgInput = document.getElementById('msgInput');
 const saveError = document.getElementById('saveError');
 const submitBtn = document.getElementById('submitBtn');
-const glassBtn = document.getElementById('glassBtn');
+let guestSide = '';
 
 let stream = null;
 let look = defaultLook();
@@ -1412,7 +1523,9 @@ function makeSwatches(el, colors, key){
   el.innerHTML = '';
   colors.forEach(col => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'sw'; b.style.background = col; b.dataset.c = col; b.setAttribute('aria-label', col);
+    b.type = 'button'; b.className = 'sw'; b.dataset.c = col;
+    if(col){ b.style.background = col; b.setAttribute('aria-label', col); }
+    else { b.classList.add('auto'); b.textContent = '자동'; b.setAttribute('aria-label', '옷에 맞춰 자동'); }
     b.addEventListener('click', () => { look[key] = col; renderLook(); });
     el.appendChild(b);
   });
@@ -1427,15 +1540,28 @@ function renderLook(){
   markOn(document.getElementById('hairRow'), b => b.dataset.c === look.h);
   markOn(document.getElementById('skinRow'), b => b.dataset.c === look.s);
   markOn(document.getElementById('topRow'), b => b.dataset.c === look.t);
-  glassBtn.classList.toggle('on', !!look.g);
-  glassBtn.setAttribute('aria-pressed', look.g ? 'true' : 'false');
+  markOn(document.getElementById('pantsRow'), b => b.dataset.c === (look.p || ''));
+  markOn(document.getElementById('accRow'), b => +b.dataset.i === look.a);
+  document.getElementById('pantsGrp').hidden = NO_PANTS.includes(look.o);
+  document.querySelectorAll('#sideRow .sideBtn').forEach(b => {
+    const on = b.dataset.side === guestSide;
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
 }
 makeChips(document.getElementById('hsRow'), HAIR_STYLES, 'hs');
 makeChips(document.getElementById('outfitRow'), OUTFITS, 'o');
 makeSwatches(document.getElementById('hairRow'), HAIRS, 'h');
 makeSwatches(document.getElementById('skinRow'), SKINS, 's');
 makeSwatches(document.getElementById('topRow'), TOPS, 't');
-glassBtn.addEventListener('click', () => { look.g = look.g ? 0 : 1; renderLook(); });
+makeSwatches(document.getElementById('pantsRow'), [''].concat(PANTS), 'p');
+makeChips(document.getElementById('accRow'), ACCS, 'a');
+document.getElementById('sideGroomName').textContent = GROOM_NAME;
+document.getElementById('sideBrideName').textContent = BRIDE_NAME;
+document.querySelectorAll('#sideRow .sideBtn').forEach(b => b.addEventListener('click', () => {
+  guestSide = b.dataset.side;
+  if(saveError.dataset.kind === 'side') saveError.hidden = true;
+  renderLook();
+}));
 
 function gotoLook(l){
   look = l;
@@ -1455,6 +1581,7 @@ joinBtn.addEventListener('click', () => {
   modalOverlay.classList.add('open');
   stepCam.classList.add('active'); stepLook.classList.remove('active');
   nameInput.value = ''; msgInput.value = '';
+  guestSide = '';
   startCamera();
 });
 function closeModalFn(){ modalOverlay.classList.remove('open'); stopCamera(); }
@@ -1483,13 +1610,21 @@ document.getElementById('diyBtn').addEventListener('click', () => gotoLook(rando
 
 submitBtn.addEventListener('click', async () => {
   const name = nameInput.value.trim();
+  if(!guestSide){
+    saveError.dataset.kind = 'side';
+    saveError.textContent = '신랑 측인지 신부 측인지 골라주세요.';
+    saveError.hidden = false;
+    document.getElementById('sideRow').scrollIntoView({ block:'center', behavior: REDUCE ? 'auto' : 'smooth' });
+    return;
+  }
   if(!name){ nameInput.focus(); return; }
+  saveError.dataset.kind = '';
   submitBtn.disabled = true;
   submitBtn.textContent = '입장하는 중...';
   const payload = {
     name: name.slice(0, 12),
     message: msgInput.value.trim().slice(0, 60),
-    look: cleanLook(look),
+    look: cleanLook(Object.assign({}, look, { side: guestSide })),
     createdAt: firebaseReady ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
   };
   try{
