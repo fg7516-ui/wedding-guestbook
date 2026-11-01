@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>웨딩 미니룸</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  /* 레이아웃: 화면 전체가 밤의 야외 결혼식장(캔버스). 제목은 위에, 버튼은 아래에 겹쳐 놓는다. */
+  :root{
+    --night:#1d1530;
+    --plum:#6b4a7a;
+    --gold:#e8b86d;
+    --rose:#e8919c;
+    --cream:#f6efe3;
+    --ink:#1c1424;
+    --panel:rgba(28,20,36,.82);
+    --line:rgba(246,239,227,.2);
+    --font-title:"Jua", "Gowun Dodum", sans-serif;
+    --font-body:"Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --font-pixel:"Press Start 2P", monospace;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  [hidden]{display:none !important;}
+  html,body{margin:0; padding:0; height:100%; overflow:hidden; background:var(--night);}
+  body{font-family:var(--font-body); color:var(--cream); position:relative;}
+
+  #scene{position:absolute; inset:0; overflow:hidden; background:var(--night);}
+  #world{position:absolute; inset:0; width:100%; height:100%; display:block; image-rendering:pixelated; touch-action:manipulation;}
+  #bubbles{position:absolute; inset:0; pointer-events:none; z-index:6;}
+
+  /* 상단 제목 */
+  .uiTop{
+    position:absolute; top:0; left:0; right:0; z-index:8; pointer-events:none;
+    padding:16px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+    text-align:center;
+  }
+  #couple{
+    font-family:var(--font-pixel); font-size:15px; line-height:1.8; color:var(--cream);
+    text-shadow:0 0 12px rgba(232,184,109,.6), 2px 2px 0 rgba(0,0,0,.45);
+  }
+  #couple .heart{color:var(--rose);}
+  #subtitle{margin-top:6px; font-family:var(--font-title); font-size:15px; color:var(--gold); text-shadow:0 1px 0 rgba(0,0,0,.5);}
+  #guestCount{
+    display:inline-block; margin-top:8px; padding:5px 12px; border-radius:999px;
+    background:var(--panel); font-size:12px; color:var(--cream); border:1px solid var(--line);
+  }
+  .notice{
+    position:absolute; left:0; right:0; bottom:84px; z-index:9; margin:0 auto; width:fit-content; max-width:calc(100% - 32px);
+    background:#7a2d2d; color:#fff; font-size:12px; line-height:1.4; padding:6px 12px; border-radius:8px; text-align:center; display:none;
+  }
+  #emptyState{
+    position:absolute; left:50%; top:62%; transform:translate(-50%,-50%); z-index:7; width:78%; max-width:300px;
+    text-align:center; font-size:14px; line-height:1.6; padding:10px 14px; border-radius:12px;
+    background:var(--panel); border:1px solid var(--line); pointer-events:none;
+  }
+
+  /* 말풍선 */
+  .bubble{
+    position:absolute; left:0; top:0; max-width:170px; width:max-content;
+    background:#fff; color:var(--ink); border:2px solid var(--ink); border-radius:4px;
+    padding:6px 10px; font-family:var(--font-title); font-size:13px; line-height:1.4; text-align:center;
+    box-shadow:2px 2px 0 rgba(0,0,0,.35); overflow-wrap:anywhere;
+  }
+  .bubble::after{
+    content:""; position:absolute; top:100%; left:calc(50% + var(--tx, 0px)); width:8px; height:8px;
+    background:#fff; border-right:2px solid var(--ink); border-bottom:2px solid var(--ink);
+    transform:translate(-50%,-5px) rotate(45deg);
+  }
+
+  /* 하단 버튼 */
+  .uiBottom{
+    position:absolute; left:0; right:0; bottom:20px; z-index:20; display:flex; justify-content:center;
+    padding:0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+    pointer-events:none;
+  }
+  #joinBtn{
+    pointer-events:auto; font-family:var(--font-title); font-size:18px; color:var(--ink);
+    background:var(--gold); border:none; border-radius:999px; padding:14px 30px;
+    box-shadow:0 5px 0 #b98a45, 0 8px 18px rgba(0,0,0,.4); cursor:pointer;
+  }
+  #joinBtn:active{transform:translateY(3px); box-shadow:0 2px 0 #b98a45, 0 4px 10px rgba(0,0,0,.4);}
+  :focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+  /* 팝업 */
+  .overlay{position:fixed; inset:0; z-index:50; background:rgba(15,10,20,.82); display:none; align-items:flex-end; justify-content:center;}
+  .overlay.open{display:flex;}
+  .modal{
+    position:relative; width:100%; max-width:480px; max-height:92dvh; overflow-y:auto;
+    background:var(--ink); border-radius:22px 22px 0 0; animation:slideUp .22s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(24px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modalBody{padding:18px 18px 0;}
+  .modal h2{font-family:var(--font-title); font-weight:400; font-size:19px; margin:0 0 10px; color:var(--gold); padding-right:36px;}
+  .tip{margin:0 0 12px; font-size:13px; line-height:1.5; color:rgba(246,239,227,.78);}
+  #closeModal{position:absolute; top:12px; right:14px; background:none; border:none; color:var(--cream); font-size:20px; padding:6px 8px; cursor:pointer; opacity:.75; z-index:2;}
+  .step{display:none;}
+  .step.active{display:block;}
+  .camWrap{position:relative; width:100%; aspect-ratio:1/1; border-radius:16px; overflow:hidden; background:#000; margin-bottom:12px;}
+  .camWrap video{width:100%; height:100%; object-fit:cover;}
+  .guide{
+    position:absolute; left:50%; top:16%; width:50%; height:64%; transform:translateX(-50%);
+    border:3px dashed rgba(255,255,255,.85); border-radius:50%; pointer-events:none; box-shadow:0 0 0 999px rgba(0,0,0,.3);
+  }
+  .camRow{display:flex; gap:10px;}
+  .btn{flex:1; padding:13px; border-radius:12px; border:none; font-family:var(--font-title); font-size:16px; cursor:pointer;}
+  .btn-primary{background:var(--gold); color:var(--ink);}
+  .btn-ghost{background:rgba(255,255,255,.1); color:var(--cream);}
+  .btn:disabled{opacity:.6; cursor:default;}
+  .pickWrap{position:relative; margin-top:10px;}
+  .pickWrap input[type=file]{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:2; font-size:0;}
+  .pickWrap .pickBtn{padding:13px; text-align:center; font-family:var(--font-title); font-size:16px; color:var(--cream); background:rgba(255,255,255,.12); border-radius:12px;}
+  .pickWrap .pickBtn.primary{background:var(--gold); color:var(--ink);}
+  .pickWrap input[type=file]:focus-visible + .pickBtn{outline:3px solid var(--gold); outline-offset:2px;}
+  .diyBtn{width:100%; margin-top:10px; flex:none;}
+  #camError{font-size:13px; color:var(--rose); margin-bottom:10px; display:none; line-height:1.5;}
+  .errLine{font-size:13px; color:var(--rose); margin-top:12px; line-height:1.5;}
+
+  /* 꾸미기 */
+  .lookTop{display:flex; justify-content:center; margin-bottom:6px;}
+  #previewCanvas{
+    width:110px; height:180px; image-rendering:pixelated; border-radius:14px;
+    background:
+      linear-gradient(45deg, #2c2240 25%, transparent 25% 75%, #2c2240 75%),
+      linear-gradient(45deg, #2c2240 25%, #241a37 25% 75%, #2c2240 75%);
+    background-size:16px 16px; background-position:0 0, 8px 8px;
+    border:2px solid var(--line);
+  }
+  .grp{margin-top:12px;}
+  .grp > span{display:block; font-size:12px; color:rgba(246,239,227,.72); margin-bottom:6px;}
+  .row{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    font-family:var(--font-title); font-size:14px; color:var(--cream); background:rgba(255,255,255,.1);
+    border:2px solid transparent; border-radius:999px; padding:7px 12px; cursor:pointer;
+  }
+  .chip.on{background:var(--gold); color:var(--ink);}
+  .sw{width:32px; height:32px; border-radius:50%; border:3px solid rgba(255,255,255,.25); cursor:pointer; padding:0;}
+  .sw.on{border-color:var(--cream); box-shadow:0 0 0 2px var(--gold);}
+  label.fl{font-size:12px; color:rgba(246,239,227,.78); display:block; margin:14px 0 6px;}
+  input[type=text], textarea{
+    width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.07); color:var(--cream); font-family:var(--font-body); font-size:15px;
+  }
+  textarea{resize:none; height:64px;}
+  .actions{position:sticky; bottom:0; background:var(--ink); padding:12px 0 calc(14px + env(safe-area-inset-bottom, 0px)); margin-top:14px;}
+
+  #lawnFallback{display:none;}
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <canvas id="world" aria-label="야외 결혼식장 정원"></canvas>
+  <div id="bubbles"></div>
+
+  <header class="uiTop">
+    <div id="couple"></div>
+    <div id="subtitle">우리 결혼식에 와줘서 고마워요</div>
+    <div id="guestCount">하객 0명</div>
+  </header>
+
+  <div id="emptyState" hidden>아직 아무도 오지 않았어요.<br>첫 번째 하객이 되어보세요!</div>
+  <p class="notice" id="banner"></p>
+
+  <div class="uiBottom">
+    <button id="joinBtn" type="button">내 미니미 만들기</button>
+  </div>
+</div>
+
+<div class="overlay" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="내 미니미 만들기">
+    <button id="closeModal" type="button" aria-label="닫기">✕</button>
+    <div class="modalBody">
+
+      <div class="step active" id="stepCam">
+        <h2>사진을 찍어주세요</h2>
+        <p class="tip">얼굴을 동그라미에 맞추고 어깨까지 보이게 찍으면, 머리색과 피부색, 옷 색을 자동으로 골라드려요.</p>
+        <div id="camError"></div>
+        <div class="camWrap" id="camWrap">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="guide"></div>
+        </div>
+        <div class="camRow">
+          <button class="btn btn-primary" id="captureBtn" type="button">촬영하기</button>
+        </div>
+        <div class="pickWrap">
+          <input type="file" id="fileInput" accept="image/*" aria-label="앨범에서 사진 고르기">
+          <div class="pickBtn" id="pickLabel">앨범에서 사진 고르기</div>
+        </div>
+        <button class="btn btn-ghost diyBtn" id="diyBtn" type="button">사진 없이 직접 꾸미기</button>
+      </div>
+
+      <div class="step" id="stepLook">
+        <h2>내 미니미 꾸미기</h2>
+        <div class="lookTop"><canvas id="previewCanvas" width="22" height="36"></canvas></div>
+
+        <div class="grp"><span>머리 모양</span><div class="row" id="hsRow"></div></div>
+        <div class="grp"><span>머리색</span><div class="row" id="hairRow"></div></div>
+        <div class="grp"><span>피부색</span><div class="row" id="skinRow"></div></div>
+        <div class="grp"><span>옷</span><div class="row" id="outfitRow"></div></div>
+        <div class="grp"><span>옷 색</span><div class="row" id="topRow"></div></div>
+        <div class="grp"><span>안경</span><div class="row"><button class="chip" id="glassBtn" type="button" aria-pressed="false">안경 쓰기</button></div></div>
+
+        <label class="fl" for="nameInput">이름</label>
+        <input type="text" id="nameInput" maxlength="12" placeholder="예: 김지은">
+        <label class="fl" for="msgInput">한마디 (선택)</label>
+        <textarea id="msgInput" maxlength="60" placeholder="두 사람에게 남기고 싶은 말"></textarea>
+        <div id="saveError" class="errLine" hidden></div>
+
+        <div class="actions">
+          <div class="camRow">
+            <button class="btn btn-ghost" id="backBtn" type="button">이전</button>
+            <button class="btn btn-primary" id="submitBtn" type="button">식장에 입장하기</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* =========================================================
+   0) 바꿔 쓰는 값
+========================================================= */
+const BRIDE_NAME = '박지수', GROOM_NAME = '강민수';      // 식장 아치 앞에 서 있는 신부, 신랑
+const BRIDE_EN = 'JISU', GROOM_EN = 'MINSU';             // 화면 맨 위 제목
+
+/* Firebase 설정 — 본인의 Firebase 프로젝트 값으로 교체하세요.
+   Firebase 콘솔 > 프로젝트 설정 > 일반 > 내 앱(웹) 에서 확인할 수 있습니다. */
+const firebaseConfig = {
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
+};
+
+let db = null;
+let firebaseReady = false;
+try{
+  if(firebaseConfig.apiKey !== "REPLACE_ME"){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+  }
+}catch(e){
+  console.error(e);
+  showBanner("Firebase 연결에 실패했어요: " + e.message);
+}
+function showBanner(msg){
+  const b = document.getElementById('banner');
+  b.textContent = msg;
+  b.style.display = 'block';
+}
+if(!firebaseReady && firebaseConfig.apiKey === "REPLACE_ME"){
+  showBanner("Firebase가 아직 연결되지 않아 체험 하객만 보여드리고 있어요.");
+}
+
+/*==SPRITE_START==*/
+/* =========================================================
+   1) 색 도우미, 팔레트, 미니미 한 명 그리기 (22x36 도트)
+========================================================= */
+function hex2rgb(h){ const n = parseInt(h.slice(1), 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+function rgb2hex(r,g,b){ return '#' + [r,g,b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function shade(h, f){ const c = hex2rgb(h); return rgb2hex(c[0]*f, c[1]*f, c[2]*f); }
+function lighten(h, a){ const c = hex2rgb(h); return rgb2hex(c[0]+(255-c[0])*a, c[1]+(255-c[1])*a, c[2]+(255-c[2])*a); }
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1 | a); t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t; return ((t ^ t>>>14) >>> 0) / 4294967296; }; }
+
+const SKINS = ['#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
+const HAIRS = ['#1b1b1f','#3b2418','#6b4226','#a9742f','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#6fa8dc'];
+const TOPS  = ['#2b3350','#1f1f2e','#f6f6f6','#c0392b','#e8919c','#6fa8dc','#8fd18a','#ffc15e','#b9a4f0','#8a5a3c'];
+const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리'];
+const OUTFITS = ['정장','턱시도','원피스','캐주얼'];
+const HEXRE = /^#[0-9a-fA-F]{6}$/;
+
+const SW = 22, SH = 36, FEET = 33;
+
+function defaultLook(){ return { s:SKINS[1], h:HAIRS[1], t:TOPS[0], hs:0, o:0, g:0, v:0 }; }
+function clampInt(v, lo, hi, d){ v = parseInt(v, 10); return (isNaN(v) || v < lo || v > hi) ? d : v; }
+function cleanLook(r){
+  const d = defaultLook();
+  if(!r || typeof r !== 'object') return d;
+  return {
+    s: HEXRE.test(r.s) ? r.s : d.s,
+    h: HEXRE.test(r.h) ? r.h : d.h,
+    t: HEXRE.test(r.t) ? r.t : d.t,
+    hs: clampInt(r.hs, 0, 4, 0),
+    o: clampInt(r.o, 0, 3, 0),
+    g: r.g ? 1 : 0,
+    v: 0
+  };
+}
+function randomLook(rnd){
+  const p = a => a[Math.floor(rnd() * a.length)];
+  return { s:p(SKINS), h:p(HAIRS.slice(0,7)), t:p(TOPS), hs:Math.floor(rnd()*5), o:Math.floor(rnd()*4), g:rnd()<0.25?1:0, v:0 };
+}
+
+function buildSprite(look, frame){
+  const c = document.createElement('canvas'); c.width = SW; c.height = SH;
+  const g = c.getContext('2d');
+  const R = (x,y,w,h,col) => { g.fillStyle = col; g.fillRect(x,y,w,h); };
+  const skin = look.s, skinSh = shade(skin, .86);
+  const hair = look.h, hairHi = lighten(hair, .38);
+  const top = look.t, topSh = shade(top, .78), topHi = lighten(top, .22);
+  const o = look.o, hs = look.hs, w1 = frame === 1;
+  const dress = (o === 2);
+  const pants = (o === 3) ? '#3d5a99' : shade(top, .85);
+  const shoe = (o === 3) ? '#f4f4f4' : '#2b2433';
+
+  /* 뒤쪽 머리카락 */
+  if(hs === 2) R(4,6,14,19,hair);
+  if(hs === 3) R(4,6,14,10,hair);
+
+  /* 다리와 신발 */
+  if(dress){
+    R(8,31,2,1,skin); R(12,31,2,1,skin);
+    R(7,w1?31:32,3,1,'#3a2a3a'); R(12,32,3,1,'#3a2a3a');
+  } else {
+    const ly = w1 ? 1 : 0;
+    R(8,26,3,5-ly,pants); R(7,31-ly,4,2,shoe);
+    R(11,26,3,5,pants);   R(11,31,4,2,shoe);
+    R(10,26,1,5-ly,shade(pants,.8)); R(11,26,1,5,shade(pants,.8));
+  }
+
+  /* 몸통과 팔 */
+  const swL = w1 ? 1 : 0, swR = w1 ? 1 : 0;
+  if(dress){
+    R(7,18,8,6,top); R(7,23,8,1,topSh); R(9,18,4,1,skin);
+    const rows = [[6,10],[6,10],[5,12],[5,12],[4,14],[4,14],[4,14]];
+    rows.forEach((r,i) => R(r[0],24+i,r[1],1,top));
+    R(4,30,14,1,topSh); R(8,26,1,4,topSh); R(13,26,1,4,topSh); R(14,19,1,4,topSh);
+    R(5,19,2,2,top); R(15,19,2,2,top);
+    R(5,21,2,6-swL,skin); R(15,21,2,6+swR,skin);
+  } else {
+    R(7,18,8,8,top); R(14,19,1,6,topSh); R(8,18,6,1,topSh);
+    R(5,19,2,6-swL,top); R(15,19,2,6+swR,top);
+    R(5,25-swL,2,2,skin); R(15,25+swR,2,2,skin);
+    if(o === 0){
+      R(10,18,2,6,'#f4f4f4'); R(10,20,2,4,'#c0392b'); R(10,19,2,1,'#8f2a20');
+      R(9,18,1,4,topSh); R(12,18,1,4,topSh);
+    } else if(o === 1){
+      R(9,18,4,5,'#f6f6f6'); R(9,18,4,2,'#2a2a2a'); R(10,18,2,1,'#c0392b'); R(7,23,8,1,'#222222');
+      R(8,18,1,5,topSh); R(13,18,1,5,topSh);
+    } else {
+      R(9,18,4,1,topSh); R(12,21,2,2,topHi);
+    }
+  }
+
+  /* 얼굴 */
+  R(6,6,10,1,skin); R(5,7,12,9,skin); R(6,16,10,1,skin); R(7,17,8,1,skinSh);
+  R(7,11,2,3,'#2a1b24'); R(13,11,2,3,'#2a1b24');
+  R(7,11,1,1,'#ffffff'); R(13,11,1,1,'#ffffff');
+  R(6,15,2,1,'#ff9aa2'); R(14,15,2,1,'#ff9aa2');
+  R(10,15,2,1,'#b5524a');
+
+  /* 앞쪽 머리카락 */
+  R(7,3,8,1,hair); R(6,4,10,1,hair); R(5,5,12,2,hair);
+  R(8,4,3,1,hairHi);
+  if(hs === 0 || hs === 2 || hs === 4){
+    R(5,7,4,1,hair); R(13,7,4,1,hair); R(5,8,2,1,hair); R(15,8,2,1,hair); R(5,9,1,2,hair); R(16,9,1,2,hair);
+  } else if(hs === 1){
+    R(5,7,12,1,hair); R(5,8,6,1,hair); R(5,9,3,1,hair); R(16,8,1,3,hair);
+  } else {
+    R(5,7,12,1,hair); R(5,8,3,1,hair); R(14,8,3,1,hair);
+  }
+  if(hs === 4){ R(9,1,4,1,hair); R(8,2,6,1,hair); R(10,1,1,1,hairHi); }
+  if(hs === 2){ R(4,7,2,16,hair); R(16,7,2,16,hair); R(4,22,2,1,shade(hair,.8)); R(16,22,2,1,shade(hair,.8)); }
+  if(hs === 3){ R(4,7,2,9,hair); R(16,7,2,9,hair); R(4,15,2,1,shade(hair,.8)); R(16,15,2,1,shade(hair,.8)); }
+
+  /* 안경 */
+  if(look.g){
+    const f = '#3b3340';
+    R(6,10,4,1,f); R(6,14,4,1,f); R(6,11,1,3,f); R(9,11,1,3,f);
+    R(12,10,4,1,f); R(12,14,4,1,f); R(12,11,1,3,f); R(15,11,1,3,f);
+    R(10,11,2,1,f);
+  }
+
+  /* 면사포 (신부 전용) */
+  if(look.v){
+    const vc = '#f1ecff';
+    R(6,2,10,1,vc); R(3,7,2,18,vc); R(17,7,2,18,vc); R(3,24,2,1,'#d9d2f0'); R(17,24,2,1,'#d9d2f0');
+  }
+
+  /* 바깥 테두리 */
+  const img = g.getImageData(0,0,SW,SH);
+  const d = img.data, out = new Uint8ClampedArray(d);
+  const A = (x,y) => (x<0||y<0||x>=SW||y>=SH) ? 0 : d[(y*SW+x)*4+3];
+  for(let y=0;y<SH;y++) for(let x=0;x<SW;x++){
+    if(d[(y*SW+x)*4+3] === 0 && (A(x-1,y)>0 || A(x+1,y)>0 || A(x,y-1)>0 || A(x,y+1)>0)){
+      const i = (y*SW+x)*4; out[i]=0x2a; out[i+1]=0x1b; out[i+2]=0x2e; out[i+3]=255;
+    }
+  }
+  g.putImageData(new ImageData(out, SW, SH), 0, 0);
+  return c;
+}
+
+const spriteCache = new Map();
+function getSprite(look, frame, flip){
+  const key = [look.s, look.h, look.t, look.hs, look.o, look.g, look.v, frame, flip ? 1 : 0].join('|');
+  let s = spriteCache.get(key);
+  if(s) return s;
+  const base = buildSprite(look, frame);
+  if(!flip){ s = base; }
+  else {
+    s = document.createElement('canvas'); s.width = SW; s.height = SH;
+    const g = s.getContext('2d');
+    g.translate(SW, 0); g.scale(-1, 1); g.drawImage(base, 0, 0);
+  }
+  spriteCache.set(key, s);
+  return s;
+}
+/*==SPRITE_END==*/
+
+/*==WORLD_START==*/
+/* =========================================================
+   2) 식장 배경 그리기 (도트 한 칸 = 화면의 P픽셀)
+========================================================= */
+let AW = 0, AH = 0, P = 3;
+let dprNow = 1;
+const world = { cx:0, archTopY:0, archBaseY:0, pathW:60, bulbs:[], flies:[] };
+
+function P32(hex){ const c = hex2rgb(hex); return ((255<<24) | (c[2]<<16) | (c[1]<<8) | c[0]); }
+
+function buildWorld(){
+  const w = AW, h = AH;
+  const buf = new Uint32Array(w*h);
+  const rnd = mulberry32(7771);
+  const px = (x,y,c) => { x = Math.round(x); y = Math.round(y); if(x>=0 && y>=0 && x<w && y<h) buf[y*w+x] = c; };
+  const rect = (x,y,ww,hh,c) => { for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) px(x+i,y+j,c); };
+  const disc = (cx,cy,r,c) => { for(let j=-r;j<=r;j++) for(let i=-r;i<=r;i++) if(i*i+j*j <= r*r + r*0.6) px(cx+i,cy+j,c); };
+
+  const gBase = P32('#2e5e43'), gBase2 = P32('#306148'), gLight = P32('#3a7355'), gDark = P32('#264f39');
+  const sand = P32('#d6c7a1'), sandSp = P32('#c9b98f'), sandHi = P32('#e4d8ba'), sandEdge = P32('#b4a37a');
+  const hedge = P32('#1c4030'), hedgeHi = P32('#275a3f');
+  const bushDark = P32('#1f4a35'), bushMid = P32('#2f6b46'), bushHi = P32('#44875a');
+  const leaf = P32('#3c8157');
+  const FL = ['#ffffff','#ffd6e5','#ff9ebd','#ffb86b','#fff0a6','#d2b4ff','#ff7aa8'].map(P32);
+  const yel = P32('#ffd84a');
+  const cream = P32('#f2ece2'), creamSh = P32('#d9d0c2'), fabric = P32('#ebe3d5'), fabricSh = P32('#dcd2c1');
+
+  const cx = Math.round(w/2);
+  const pathW = Math.min(72, Math.round(w*0.34));
+  const archW = Math.min(66, pathW - 2);
+  const R = Math.round(archW/2);
+  const archTopY = Math.round(h*0.17);
+  const archBaseY = archTopY + R + 38;
+  const pl = cx - Math.round(pathW/2), pr = cx + Math.round(pathW/2);
+  Object.assign(world, { cx, archTopY, archBaseY, pathW });
+
+  /* 잔디 */
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const r = rnd();
+    buf[y*w+x] = r < 0.07 ? gLight : r < 0.14 ? gDark : ((((x>>2)+(y>>2)) & 1) ? gBase : gBase2);
+  }
+  for(let i=0;i<Math.round(w*h/420);i++){ const x = rnd()*w, y = rnd()*h; const c = FL[(rnd()*FL.length)|0]; px(x,y,c); if(rnd()<.4) px(x+1,y,c); }
+
+  /* 위쪽 산울타리 */
+  const hy = Math.round(h*0.085);
+  for(let x=0;x<w;x++){
+    const ey = hy + Math.round(Math.sin(x*0.5)*1.5);
+    for(let y=0;y<=ey;y++) buf[y*w+x] = rnd() < 0.25 ? hedgeHi : hedge;
+  }
+
+  /* 통로 */
+  for(let y=archBaseY-6;y<h;y++){
+    const xl = pl + Math.floor(Math.sin(y*0.13)*1.5), xr = pr + Math.floor(Math.cos(y*0.11)*1.5);
+    for(let x=xl;x<=xr;x++){
+      const r = rnd();
+      px(x,y, r < 0.07 ? sandSp : r < 0.1 ? sandHi : sand);
+    }
+    px(xl,y,sandEdge); px(xr,y,sandEdge); px(xl+1,y,sandHi); px(xr-1,y,sandHi);
+  }
+  for(let i=0;i<60;i++){ const x = pl + 4 + rnd()*(pathW-8), y = archBaseY + rnd()*(h-archBaseY); const c = FL[1+((rnd()*2)|0)]; px(x,y,c); px(x+1,y+1,c); }
+
+  /* 꽃 모양 도우미 */
+  const bloom = (x,y) => { const c = FL[(rnd()*FL.length)|0]; px(x,y-1,c); px(x,y+1,c); px(x-1,y,c); px(x+1,y,c); px(x,y,yel); };
+  const clump = (x,y) => { px(x,y,leaf); px(x+1,y,leaf); px(x-1,y+1,leaf); px(x,y+1,bushMid); px(x+1,y+1,leaf); };
+  const lav = (x,y) => { const c1 = P32('#9b7be0'), c2 = P32('#c4a8ff'); for(let k=0;k<5;k++) px(x,y-k,k%2 ? c1 : c2); px(x-1,y+1,leaf); px(x+1,y+1,leaf); px(x,y+1,leaf); };
+  const bush = (bx,by,r) => { disc(bx,by,r,bushDark); disc(bx-1,by-1,Math.max(1,r-2),bushMid); disc(bx-2,by-2,Math.max(1,r-5),bushHi); };
+
+  /* 양옆 화단 */
+  const bedLen = h - archBaseY;
+  for(let side=-1; side<=1; side+=2){
+    const n = Math.round(bedLen * 0.9);
+    for(let i=0;i<n;i++){
+      const x = side < 0 ? pl - 3 - rnd()*20 : pr + 3 + rnd()*20;
+      const y = archBaseY - 4 + rnd()*(bedLen + 4);
+      clump(x,y);
+    }
+    for(let i=0;i<n;i++){
+      const x = side < 0 ? pl - 3 - rnd()*20 : pr + 3 + rnd()*20;
+      const y = archBaseY - 4 + rnd()*(bedLen + 4);
+      bloom(x,y);
+    }
+  }
+  for(let i=0;i<18;i++) lav(pl - 24 - rnd()*14, archBaseY + 6 + rnd()*110);
+  for(let i=0;i<14;i++) lav(pr + 22 + rnd()*14, archBaseY + 30 + rnd()*120);
+
+  /* 가장자리 덤불 */
+  for(let y=hy+10;y<h;y+=17){
+    bush(-2 + ((rnd()*3)|0), y + ((rnd()*6)|0), 6 + ((rnd()*3)|0));
+    bush(w + 1 - ((rnd()*3)|0), y + 8 + ((rnd()*6)|0), 6 + ((rnd()*3)|0));
+  }
+  for(let i=0;i<Math.round(h/5);i++){ bloom(rnd()*8, hy + rnd()*(h-hy)); bloom(w - rnd()*8, hy + rnd()*(h-hy)); }
+
+  /* 나무 */
+  const tree = (tx,ty,r) => {
+    rect(tx-3, ty+r-5, 6, 9, P32('#4a3023')); rect(tx+1, ty+r-5, 2, 9, P32('#3a2519'));
+    disc(tx,ty,r,bushDark); disc(tx-2,ty-2,r-2,bushMid); disc(tx-Math.round(r*.3),ty-Math.round(r*.35),Math.round(r*.55),bushHi);
+    for(let i=0;i<r*3;i++){ const a = rnd()*6.28, d = rnd()*r*0.8; px(tx+Math.cos(a)*d, ty+Math.sin(a)*d, rnd()<.5 ? bushHi : bushDark); }
+  };
+  tree(8, Math.round(h*0.10), 26);
+  tree(w-8, Math.round(h*0.115), 27);
+  tree(0, Math.round(h*0.50), 15);
+  tree(w, Math.round(h*0.70), 15);
+
+  /* 아치 */
+  const cy = archTopY + R;
+  rect(cx-R, cy, 4, archBaseY-cy, cream); rect(cx-R+3, cy, 1, archBaseY-cy, creamSh);
+  rect(cx+R-3, cy, 4, archBaseY-cy, cream); rect(cx+R-3, cy, 1, archBaseY-cy, creamSh);
+  for(let j=-R;j<=0;j++) for(let i=-R;i<=R;i++){
+    const d = Math.sqrt(i*i + j*j);
+    if(d <= R && d >= R-4) px(cx+i, cy+j, d >= R-1.5 ? creamSh : cream);
+  }
+  for(let x=cx-R+4;x<=cx+R-4;x++){
+    const depth = 3 + Math.round(2*Math.sin((x-cx)*0.5));
+    for(let y=archTopY+4;y<archTopY+4+depth;y++) px(x,y,(x&1) ? fabric : fabricSh);
+  }
+  for(let y=cy+2;y<archBaseY-3;y++){
+    const pinch = (y > archBaseY-18 && y < archBaseY-14) ? 2 : 0;
+    for(let i=0;i<6-pinch;i++){ px(cx-R+4+i, y, (i+y>>1)&1 ? fabric : fabricSh); px(cx+R-5-i, y, (i+y>>1)&1 ? fabric : fabricSh); }
+  }
+  for(let k=0;k<64;k++){
+    const a = Math.PI + (k/63)*Math.PI;
+    const x = cx + (R-1.5)*Math.cos(a), y = cy + (R-1.5)*Math.sin(a);
+    px(x+1,y+1,leaf); px(x-1,y+1,leaf);
+    bloom(x,y);
+  }
+  for(let k=0;k<7;k++){ bloom(cx-R+1+((rnd()*3)|0), cy + 4 + k*7); bloom(cx+R-1-((rnd()*3)|0), cy + 4 + k*7); }
+  bush(cx-R-1, archBaseY-1, 6); bush(cx+R+1, archBaseY-1, 6);
+  for(let k=0;k<10;k++){ bloom(cx-R-6+rnd()*12, archBaseY-4+rnd()*5); bloom(cx+R-6+rnd()*12, archBaseY-4+rnd()*5); }
+  px(cx,archTopY+3,sandEdge); px(cx,archTopY+4,sandEdge); px(cx,archTopY+5,sandEdge);
+  rect(cx-2,archTopY+6,4,3,P32('#e8b84a')); px(cx-1,archTopY+6,P32('#fff0a6')); px(cx,archTopY+9,P32('#8a6a22'));
+
+  /* 전구 줄 */
+  const wireY = Math.round(h*0.045), seg = 70, sag = 7;
+  const wire = P32('#14101c'), bulbC = P32('#ffd98a');
+  world.bulbs = [];
+  for(let x=0;x<w;x++){
+    const u = (x % seg) / seg;
+    const y = wireY + Math.round(sag * (1 - Math.pow(2*u - 1, 2)));
+    px(x,y,wire);
+    if(x % 9 === 4){ px(x,y+1,bulbC); px(x,y+2,bulbC); world.bulbs.push({ x:x, y:y+1, ph: rnd()*6.28 }); }
+  }
+
+  /* 밤 분위기: 위와 가장자리를 어둡게, 아치 아래는 따뜻하게 */
+  const gx = cx, gy = archBaseY - 14, gr = 58;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const c = buf[y*w+x];
+    let r = c & 255, g = (c>>8) & 255, b = (c>>16) & 255;
+    let dk = 0;
+    const topSpan = h*0.22;
+    if(y < topSpan) dk += (1 - y/topSpan) * 0.5;
+    const ex = Math.abs(x - w/2) / (w/2);
+    if(ex > 0.75) dk += (ex - 0.75) * 1.2 * 0.35;
+    dk = Math.min(dk, 0.7);
+    r *= (1 - dk*1.05); g *= (1 - dk*0.95); b *= (1 - dk*0.8);
+    r *= 0.93; g *= 0.96;
+    const dx = x - gx, dy = (y - gy) * 1.2, dd = Math.sqrt(dx*dx + dy*dy);
+    if(dd < gr){ const k = 0.27 * (1 - dd/gr); r += (255-r)*k; g += (233-g)*k; b += (168-b)*k; }
+    buf[y*w+x] = (255<<24) | (Math.max(0,Math.min(255,Math.round(b)))<<16) | (Math.max(0,Math.min(255,Math.round(g)))<<8) | Math.max(0,Math.min(255,Math.round(r)));
+  }
+
+  /* 반딧불이 */
+  world.flies = [];
+  for(let i=0;i<14;i++) world.flies.push({ fx: rnd()*w, fy: h*0.3 + rnd()*h*0.65, ph: rnd()*6.28, sp: 0.4 + rnd()*0.5 });
+
+  const bg = document.createElement('canvas'); bg.width = w; bg.height = h;
+  bg.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(buf.buffer), w, h), 0, 0);
+  return bg;
+}
+/*==WORLD_END==*/
+
+/* =========================================================
+   3) 화면 크기 맞추기와 그리기 루프
+========================================================= */
+const sceneEl = document.getElementById('scene');
+const cvs = document.getElementById('world');
+const ctx = cvs.getContext('2d');
+const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPEED = REDUCE ? 0.4 : 1;
+let bgCanvas = null;
+let cssW = 0, cssH = 0;
+
+function layout(){
+  cssW = sceneEl.clientWidth; cssH = sceneEl.clientHeight;
+  if(cssW < 50 || cssH < 50) return;
+  dprNow = Math.min(window.devicePixelRatio || 1, 3);
+  cvs.width = Math.round(cssW * dprNow);
+  cvs.height = Math.round(cssH * dprNow);
+  P = Math.max(2, Math.round(Math.min(cvs.width / 230, cvs.height / 400)));
+  AW = Math.ceil(cvs.width / P);
+  AH = Math.ceil(cvs.height / P);
+  bgCanvas = buildWorld();
+  placeCouple();
+  while(pending.length){ const p = pending.shift(); addGuest(p[0], p[1]); }
+}
+
+const guests = new Map();   // 하객 id -> 상태
+const npcs = [];            // 신부, 신랑
+let lastCount = -1;
+
+function placeCouple(){
+  const brideLook = { s:SKINS[0], h:HAIRS[1], t:'#fdfdfd', hs:2, o:2, g:0, v:1 };
+  const groomLook = { s:SKINS[1], h:HAIRS[0], t:'#1f1f2e', hs:1, o:1, g:0, v:0 };
+  npcs.length = 0;
+  npcs.push({ id:'bride', name:BRIDE_NAME, look:brideLook, x: world.cx - 9, y: world.archBaseY + 2, message:'와줘서 정말 고마워요!', npc:true, frame:0, face:1 });
+  npcs.push({ id:'groom', name:GROOM_NAME, look:groomLook, x: world.cx + 9, y: world.archBaseY + 2, message:'함께해줘서 고마워요 :)', npc:true, frame:0, face:-1 });
+}
+
+function bounds(){
+  return { minX:12, maxX:Math.max(40, AW-12), minY: world.archBaseY + 12, maxY: Math.max(world.archBaseY + 30, AH - 6) };
+}
+
+function addGuest(id, data){
+  if(guests.has(id) || !AW) { if(!AW){ pending.push([id, data]); } return; }
+  const b = bounds();
+  const ang = Math.random() * Math.PI * 2, sp = (8 + Math.random()*10) * SPEED;
+  guests.set(id, {
+    id, name: data.name || '이름없음', message: data.message || '', look: cleanLook(data.look),
+    x: b.minX + Math.random()*(b.maxX-b.minX), y: b.minY + Math.random()*(b.maxY-b.minY),
+    vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp*0.6, face: 1, frame: 0, stepT: 0,
+    nextTurn: performance.now() + 800 + Math.random()*2500
+  });
+  updateCount();
+}
+const pending = [];
+
+function removeGuest(id){
+  guests.delete(id);
+  const bb = bubbles.get(id); if(bb){ bb.el.remove(); bubbles.delete(id); }
+  updateCount();
+}
+function updateCount(){
+  document.getElementById('guestCount').textContent = '하객 ' + guests.size + '명';
+  document.getElementById('emptyState').hidden = guests.size > 0;
+}
+
+function stepGuests(dt, now){
+  const b = bounds();
+  guests.forEach(g => {
+    if(now > g.nextTurn){
+      if(Math.random() < 0.3){ g.vx = 0; g.vy = 0; g.nextTurn = now + 1200 + Math.random()*2200; }
+      else {
+        const sp = (8 + Math.random()*10) * SPEED, a = Math.random()*Math.PI*2;
+        g.vx = Math.cos(a)*sp; g.vy = Math.sin(a)*sp*0.6; g.nextTurn = now + 2200 + Math.random()*3200;
+      }
+    }
+    g.x += g.vx*dt; g.y += g.vy*dt;
+    if(g.x < b.minX){ g.x = b.minX; g.vx = Math.abs(g.vx); }
+    if(g.x > b.maxX){ g.x = b.maxX; g.vx = -Math.abs(g.vx); }
+    if(g.y < b.minY){ g.y = b.minY; g.vy = Math.abs(g.vy); }
+    if(g.y > b.maxY){ g.y = b.maxY; g.vy = -Math.abs(g.vy); }
+    if(g.vx !== 0 || g.vy !== 0){ g.stepT += dt; if(g.stepT > 0.24){ g.stepT = 0; g.frame ^= 1; } } else { g.frame = 0; }
+    if(g.vx < -0.5) g.face = -1; else if(g.vx > 0.5) g.face = 1;
+  });
+}
+
+function drawFrame(tms){
+  if(!bgCanvas) return;
+  const t = tms / 1000;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(bgCanvas, 0, 0, AW, AH, 0, 0, AW*P, AH*P);
+
+  /* 전구 반짝임 */
+  world.bulbs.forEach(bl => {
+    const a = REDUCE ? 0.18 : 0.12 + 0.12*Math.sin(t*2.2 + bl.ph);
+    ctx.fillStyle = 'rgba(255,214,130,' + a.toFixed(3) + ')';
+    ctx.fillRect((bl.x-2)*P, (bl.y-2)*P, 5*P, 5*P);
+    ctx.fillStyle = 'rgba(255,240,190,.95)';
+    ctx.fillRect(bl.x*P, bl.y*P, P, P);
+  });
+  /* 반딧불이 */
+  world.flies.forEach(f => {
+    const x = f.fx + (REDUCE ? 0 : Math.sin(t*f.sp + f.ph)*10), y = f.fy + (REDUCE ? 0 : Math.cos(t*f.sp*0.8 + f.ph*1.3)*7);
+    const a = 0.45 + 0.4*Math.sin(t*1.6 + f.ph);
+    ctx.fillStyle = 'rgba(230,255,150,' + (a*0.28).toFixed(3) + ')';
+    ctx.fillRect(Math.round(x-1)*P, Math.round(y-1)*P, 3*P, 3*P);
+    ctx.fillStyle = 'rgba(245,255,190,' + a.toFixed(3) + ')';
+    ctx.fillRect(Math.round(x)*P, Math.round(y)*P, P, P);
+  });
+
+  /* 사람들 (아래쪽일수록 앞) */
+  const all = npcs.concat(Array.from(guests.values())).sort((a,b) => a.y - b.y);
+  const nameSize = Math.round(12 * dprNow);
+  ctx.font = nameSize + 'px Jua, "Gowun Dodum", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.lineJoin = 'round';
+  all.forEach(e => {
+    const fx = Math.round(e.x), fy = Math.round(e.y);
+    ctx.fillStyle = 'rgba(8,16,12,.38)';
+    ctx.fillRect((fx-4)*P, (fy-2)*P, 8*P, P);
+    ctx.fillRect((fx-6)*P, (fy-1)*P, 12*P, 2*P);
+    ctx.fillRect((fx-4)*P, (fy+1)*P, 8*P, P);
+    const bob = (e.frame === 1) ? 1 : 0;
+    const spr = getSprite(e.look, e.frame, e.face < 0);
+    ctx.drawImage(spr, 0, 0, SW, SH, (fx - 10.5 - 0.5) * P | 0, (fy - FEET - bob) * P, SW*P, SH*P);
+  });
+  all.forEach(e => {
+    const fx = Math.round(e.x), fy = Math.round(e.y);
+    ctx.lineWidth = 3 * dprNow;
+    ctx.strokeStyle = 'rgba(20,12,30,.92)';
+    ctx.strokeText(e.name, fx*P, fy*P + 14*dprNow);
+    ctx.fillStyle = e.npc ? '#ffe08a' : '#ffffff';
+    ctx.fillText(e.name, fx*P, fy*P + 14*dprNow);
+  });
+}
+
+let lastT = performance.now();
+function loop(tms){
+  const dt = Math.min(0.05, (tms - lastT) / 1000);
+  lastT = tms;
+  stepGuests(dt, tms);
+  drawFrame(tms);
+  updateBubbles(tms);
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   4) 말풍선
+========================================================= */
+const bubbleLayer = document.getElementById('bubbles');
+const bubbles = new Map();
+function entityById(id){ return guests.get(id) || npcs.find(n => n.id === id); }
+function showBubble(id, text, ms){
+  let b = bubbles.get(id);
+  if(!b){
+    const el = document.createElement('div'); el.className = 'bubble';
+    bubbleLayer.appendChild(el); b = { el, until: 0 }; bubbles.set(id, b);
+  }
+  b.el.textContent = text;
+  b.until = performance.now() + ms;
+}
+function updateBubbles(now){
+  bubbles.forEach((b, id) => {
+    const e = entityById(id);
+    if(!e || now > b.until){ b.el.remove(); bubbles.delete(id); return; }
+    const cx = e.x * P / dprNow, cyy = (e.y - FEET - 3) * P / dprNow;
+    const half = b.el.offsetWidth / 2;
+    const x = Math.min(Math.max(cx, half + 8), cssW - half - 8);
+    b.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + cyy.toFixed(1) + 'px) translate(-50%,-100%) translateY(-6px)';
+    b.el.style.setProperty('--tx', (cx - x).toFixed(1) + 'px');
+  });
+}
+cvs.addEventListener('click', ev => {
+  const r = cvs.getBoundingClientRect();
+  const ax = (ev.clientX - r.left) * dprNow / P, ay = (ev.clientY - r.top) * dprNow / P;
+  const list = npcs.concat(Array.from(guests.values())).sort((a,b) => b.y - a.y);
+  for(const e of list){
+    if(Math.abs(ax - e.x) <= 9 && ay >= e.y - FEET && ay <= e.y + 2){
+      showBubble(e.id, e.message || '결혼 축하해요!', 3600);
+      return;
+    }
+  }
+});
+setInterval(() => {
+  if(bubbles.size >= 3) return;
+  const withMsg = Array.from(guests.values()).filter(g => g.message && !bubbles.has(g.id));
+  if(!withMsg.length) return;
+  const g = withMsg[Math.floor(Math.random() * withMsg.length)];
+  showBubble(g.id, g.message, 5000);
+}, 2300);
+
+/* =========================================================
+   5) 하객 데이터 (Firestore 실시간, 설정 전에는 체험 하객)
+========================================================= */
+function startData(){
+  if(firebaseReady){
+    db.collection('guests').orderBy('createdAt','asc').onSnapshot(snap => {
+      snap.docChanges().forEach(ch => {
+        if(ch.type === 'added') addGuest(ch.doc.id, ch.doc.data());
+        else if(ch.type === 'removed') removeGuest(ch.doc.id);
+      });
+    }, err => {
+      console.error(err);
+      showBanner("방명록을 불러오지 못했어요. Firestore 보안 규칙을 확인해주세요.");
+    });
+  } else {
+    const rnd = mulberry32(42);
+    const demo = [
+      ['체험 하객 1','결혼 축하해요!'], ['체험 하객 2','행복하게 살아요'], ['체험 하객 3',''],
+      ['체험 하객 4','오늘 정말 예뻐요!'], ['체험 하객 5',''], ['체험 하객 6','두 분 영원히!']
+    ];
+    demo.forEach((d, i) => addGuest('demo' + i, { name:d[0], message:d[1], look:randomLook(rnd) }));
+  }
+}
+
+/* =========================================================
+   6) 사진 찍기, 색 뽑기, 꾸미기
+========================================================= */
+const joinBtn = document.getElementById('joinBtn');
+const modalOverlay = document.getElementById('modalOverlay');
+const stepCam = document.getElementById('stepCam');
+const stepLook = document.getElementById('stepLook');
+const camWrap = document.getElementById('camWrap');
+const video = document.getElementById('video');
+const captureBtn = document.getElementById('captureBtn');
+const camError = document.getElementById('camError');
+const pickLabel = document.getElementById('pickLabel');
+const fileInput = document.getElementById('fileInput');
+const previewCanvas = document.getElementById('previewCanvas');
+const nameInput = document.getElementById('nameInput');
+const msgInput = document.getElementById('msgInput');
+const saveError = document.getElementById('saveError');
+const submitBtn = document.getElementById('submitBtn');
+const glassBtn = document.getElementById('glassBtn');
+
+let stream = null;
+let look = defaultLook();
+
+function setCameraAvailable(ok){
+  camWrap.hidden = !ok; captureBtn.hidden = !ok;
+  pickLabel.classList.toggle('primary', !ok);
+}
+async function startCamera(){
+  camError.style.display = 'none';
+  setCameraAvailable(true);
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('camera-unsupported');
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false });
+    video.srcObject = stream;
+  }catch(e){
+    console.error(e);
+    setCameraAvailable(false);
+    camError.style.display = 'block';
+    camError.textContent = '카메라를 사용할 수 없어요. 아래에서 앨범 사진을 고르거나 직접 꾸며주세요.';
+  }
+}
+function stopCamera(){ if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; } }
+
+function nearest(palette, rgb){
+  let best = palette[0], bd = 1e9;
+  palette.forEach(h => {
+    const c = hex2rgb(h);
+    const d = (c[0]-rgb[0])**2 + (c[1]-rgb[1])**2 + (c[2]-rgb[2])**2;
+    if(d < bd){ bd = d; best = h; }
+  });
+  return best;
+}
+function lookFromSource(source, sw, sh){
+  const N = 64;
+  const c = document.createElement('canvas'); c.width = N; c.height = N;
+  const x = c.getContext('2d', { willReadFrequently:true });
+  const s = Math.min(sw, sh);
+  x.drawImage(source, (sw-s)/2, (sh-s)/2, s, s, 0, 0, N, N);
+  const avg = (x0,y0,x1,y1) => {
+    const d = x.getImageData(x0,y0,x1-x0,y1-y0).data;
+    let r=0,g=0,b=0; const n = d.length/4;
+    for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
+    return [r/n, g/n, b/n];
+  };
+  const l = defaultLook();
+  l.s = nearest(SKINS, avg(27,26,37,38));
+  l.h = nearest(HAIRS, avg(27,12,37,17));
+  l.t = nearest(TOPS, avg(18,56,46,64));
+  return l;
+}
+
+function makeChips(el, labels, key){
+  el.innerHTML = '';
+  labels.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = t; b.dataset.i = i;
+    b.addEventListener('click', () => { look[key] = i; renderLook(); });
+    el.appendChild(b);
+  });
+}
+function makeSwatches(el, colors, key){
+  el.innerHTML = '';
+  colors.forEach(col => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sw'; b.style.background = col; b.dataset.c = col; b.setAttribute('aria-label', col);
+    b.addEventListener('click', () => { look[key] = col; renderLook(); });
+    el.appendChild(b);
+  });
+}
+function markOn(el, test){ Array.from(el.children).forEach(b => b.classList.toggle('on', test(b))); }
+function renderLook(){
+  const g = previewCanvas.getContext('2d');
+  g.clearRect(0, 0, SW, SH);
+  g.drawImage(getSprite(look, 0, false), 0, 0);
+  markOn(document.getElementById('hsRow'), b => +b.dataset.i === look.hs);
+  markOn(document.getElementById('outfitRow'), b => +b.dataset.i === look.o);
+  markOn(document.getElementById('hairRow'), b => b.dataset.c === look.h);
+  markOn(document.getElementById('skinRow'), b => b.dataset.c === look.s);
+  markOn(document.getElementById('topRow'), b => b.dataset.c === look.t);
+  glassBtn.classList.toggle('on', !!look.g);
+  glassBtn.setAttribute('aria-pressed', look.g ? 'true' : 'false');
+}
+makeChips(document.getElementById('hsRow'), HAIR_STYLES, 'hs');
+makeChips(document.getElementById('outfitRow'), OUTFITS, 'o');
+makeSwatches(document.getElementById('hairRow'), HAIRS, 'h');
+makeSwatches(document.getElementById('skinRow'), SKINS, 's');
+makeSwatches(document.getElementById('topRow'), TOPS, 't');
+glassBtn.addEventListener('click', () => { look.g = look.g ? 0 : 1; renderLook(); });
+
+function gotoLook(l){
+  look = l;
+  saveError.hidden = true;
+  stepCam.classList.remove('active');
+  stepLook.classList.add('active');
+  stopCamera();
+  renderLook();
+}
+function backToPicker(){
+  stepLook.classList.remove('active');
+  stepCam.classList.add('active');
+  startCamera();
+}
+
+joinBtn.addEventListener('click', () => {
+  modalOverlay.classList.add('open');
+  stepCam.classList.add('active'); stepLook.classList.remove('active');
+  nameInput.value = ''; msgInput.value = '';
+  startCamera();
+});
+function closeModalFn(){ modalOverlay.classList.remove('open'); stopCamera(); }
+document.getElementById('closeModal').addEventListener('click', closeModalFn);
+modalOverlay.addEventListener('click', e => { if(e.target === modalOverlay) closeModalFn(); });
+document.getElementById('backBtn').addEventListener('click', backToPicker);
+
+captureBtn.addEventListener('click', () => {
+  if(!video.videoWidth) return;
+  gotoLook(lookFromSource(video, video.videoWidth, video.videoHeight));
+});
+fileInput.addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => { const l = lookFromSource(img, img.naturalWidth, img.naturalHeight); URL.revokeObjectURL(url); fileInput.value = ''; gotoLook(l); };
+  img.onerror = () => {
+    URL.revokeObjectURL(url); fileInput.value = '';
+    camError.style.display = 'block';
+    camError.textContent = '이 사진은 열 수 없어요. JPG나 PNG 사진으로 다시 골라주세요.';
+  };
+  img.src = url;
+});
+document.getElementById('diyBtn').addEventListener('click', () => gotoLook(randomLook(Math.random)));
+
+submitBtn.addEventListener('click', async () => {
+  const name = nameInput.value.trim();
+  if(!name){ nameInput.focus(); return; }
+  submitBtn.disabled = true;
+  submitBtn.textContent = '입장하는 중...';
+  const payload = {
+    name: name.slice(0, 12),
+    message: msgInput.value.trim().slice(0, 60),
+    look: cleanLook(look),
+    createdAt: firebaseReady ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+  };
+  try{
+    if(firebaseReady) await db.collection('guests').add(payload);
+    else addGuest('local-' + Date.now(), payload);
+    closeModalFn();
+  }catch(e){
+    console.error(e);
+    saveError.hidden = false;
+    saveError.textContent = '저장에 실패했어요. 잠시 후 다시 눌러주세요.';
+  }finally{
+    submitBtn.disabled = false;
+    submitBtn.textContent = '식장에 입장하기';
+  }
+});
+
+/* =========================================================
+   7) 시작
+========================================================= */
+document.getElementById('couple').innerHTML = GROOM_EN + ' <span class="heart">♥</span> ' + BRIDE_EN;
+if(window.ResizeObserver){ new ResizeObserver(() => { layout(); }).observe(sceneEl); }
+else window.addEventListener('resize', layout);
+layout();
+startData();
+updateCount();
+if(document.fonts && document.fonts.load){ document.fonts.load('12px Jua'); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
