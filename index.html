@@ -193,12 +193,24 @@
   .errLine{font-size:13px; color:var(--rose); margin-top:12px; line-height:1.5;}
 
   /* 꾸미기 */
-  .lookTop{display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:6px;}
+  /* 미리보기를 창 위쪽에 고정: 아래로 내려도 계속 보임 */
+  .lookHead{
+    position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:14px;
+    margin:-18px -18px 10px; padding:14px 18px 12px; background:var(--ink);
+    border-bottom:1px solid var(--line); border-radius:22px 22px 0 0;
+  }
+  .lookInfo{flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px;}
+  .lookInfo h2{margin:0; padding-right:34px;}
+  .lookHint{margin:0; font-size:12px; color:rgba(246,239,227,.6);}
+  .lookHead #closeModal{top:10px; right:10px;}
+  #previewCanvas.pop{animation:pop .22s ease;}
+  @keyframes pop{0%{transform:scale(1);} 45%{transform:scale(1.07);} 100%{transform:scale(1);}}
+  @media (prefers-reduced-motion: reduce){ #previewCanvas.pop{animation:none;} }
   .randBtn{flex:none; padding:9px 18px; font-size:14px;}
   .subLbl{flex-basis:100%; font-size:12px; color:rgba(246,239,227,.6); margin:4px 0 -2px;}
   .subLbl:first-child{margin-top:0;}
   #previewCanvas{
-    width:110px; height:180px; image-rendering:pixelated; border-radius:14px;
+    flex:none; width:80px; height:131px; image-rendering:pixelated; border-radius:12px;
     background:
       linear-gradient(45deg, #2c2240 25%, transparent 25% 75%, #2c2240 75%),
       linear-gradient(45deg, #2c2240 25%, #241a37 25% 75%, #2c2240 75%);
@@ -276,16 +288,19 @@
 
 <div class="overlay" id="modalOverlay">
   <div class="modal" role="dialog" aria-modal="true" aria-label="내 미니미 만들기">
-    <button id="closeModal" type="button" aria-label="닫기">✕</button>
     <div class="modalBody">
 
       <div class="step active" id="stepLook">
-        <h2>내 미니미 꾸미기</h2>
-        <p class="tip" id="mineNote" hidden>이 휴대폰으로 이미 만든 미니미가 있어요. 함께 온 가족 것을 만들 때만 새로 만들어주세요.</p>
-        <div class="lookTop">
-          <canvas id="previewCanvas" width="44" height="72"></canvas>
-          <button class="btn btn-ghost randBtn" id="randBtn" type="button">랜덤으로 꾸미기</button>
+        <div class="lookHead">
+          <canvas id="previewCanvas" width="44" height="72" aria-label="내 미니미 미리보기"></canvas>
+          <div class="lookInfo">
+            <h2>내 미니미 꾸미기</h2>
+            <p class="lookHint">아래에서 고르면 바로 바뀌어요</p>
+            <button class="btn btn-ghost randBtn" id="randBtn" type="button">랜덤으로 꾸미기</button>
+          </div>
+          <button id="closeModal" type="button" aria-label="닫기">✕</button>
         </div>
+        <p class="tip" id="mineNote" hidden>이 휴대폰으로 이미 만든 미니미가 있어요. 함께 온 가족 것을 만들 때만 새로 만들어주세요.</p>
 
         <div class="grp"><span>머리 모양</span><div class="row" id="hsRow"></div></div>
         <div class="grp"><span>머리색</span><div class="row" id="hairRow"></div></div>
@@ -2079,6 +2094,7 @@ function makeSwatches(el, colors, key){
 }
 function markOn(el, test){ Array.from(el.children).forEach(b => b.classList.toggle('on', test(b))); }
 function renderLook(){
+  previewCanvas.classList.remove('pop'); void previewCanvas.offsetWidth; previewCanvas.classList.add('pop');
   const g = previewCanvas.getContext('2d');
   g.clearRect(0, 0, SPR_W, SPR_H);
   g.drawImage(getSprite(look, 0, false), 0, 0);
