@@ -223,15 +223,17 @@ const SKINS = ['#fff0e0','#ffe0c4','#f5c8a0','#e0a878','#c68642','#8d5524'];
 const HAIRS = ['#1b1b1f','#3b2418','#5a2a1e','#6b4226','#a9742f','#c9a27a','#d9b660','#b5452f','#9aa0a6','#f2f2f2','#e8919c','#8e6bbf','#6fa8dc'];
 const TOPS  = ['#1f1f2e','#2b3350','#f6f6f6','#e8d3b0','#8a5a3c','#7a2638','#c0392b','#f2a65a','#ffc15e','#8fd18a','#6b7a3a','#7fd6c2','#a9d4f5','#6fa8dc','#b9a4f0','#e8919c'];
 const PANTS = ['#22202a','#2b3350','#3d5a99','#7a7f8a','#d8c8a8','#5a3a2a','#f2f2ee'];
-const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리','포니테일','곱슬머리','양갈래','반삭','투블럭','올백','웨이브','땋은 머리','쉼표머리'];
-/* 옷 번호 2(원피스)는 신부 전용이라 하객 선택지에서는 뺌 */
-const OUTFITS = ['정장','턱시도','원피스','캐주얼','한복','후드티','블라우스·치마','니트','셔츠·슬랙스','카디건','트렌치코트','가죽 재킷','맨투맨'];
-const GUEST_OUTFITS = [0,1,3,4,5,6,7,8,9,10,11,12];
+const HAIR_STYLES = ['짧은 머리','가르마','긴 머리','단발','올림머리','포니테일','곱슬머리','양갈래','반삭','투블럭','올백','웨이브','땋은 머리','쉼표머리','히피펌','양쪽 똥머리','히메컷','가운데 가르마 장발','아프로','스파이크'];
+/* 옷 번호 2(흰 웨딩드레스)는 신부 전용이라 하객 선택지에서는 뺌 */
+const OUTFITS = ['정장','턱시도','웨딩드레스','캐주얼','한복','후드티','블라우스·치마','니트','셔츠·슬랙스','카디건','트렌치코트','가죽 재킷','맨투맨',
+                 '미니 원피스','롱 원피스','곰돌이 옷','공룡 옷','산타','셰프','의사 가운','경찰','마법사','축구 유니폼','공주 드레스','왕자'];
+const GUEST_OUTFITS = [0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];
+const OUTFIT_GROUPS = [['기본', [0,1,3,4,5,6,7,8,9,10,11,12]], ['원피스', [13,14]], ['코스튬', [15,16,17,18,19,20,21,22,23,24]]];
 const ACCS = ['없음','안경','선글라스','리본','꽃 머리핀','비니','베레모','볼캡','머리띠','귀걸이','핸드백'];
 const EYES = ['기본','웃는 눈','윙크','동그란 눈','졸린 눈'];
 const SIDES = { groom:'신랑 측', bride:'신부 측' };
 const HEXRE = /^#[0-9a-fA-F]{6}$/;
-const NO_PANTS = [2, 4, 6];     // 원피스, 한복, 치마는 하의 색이 필요 없음
+const NO_PANTS = [2, 4, 6, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24];  // 치마·원피스·코스튬은 하의 색이 정해져 있음
 
 const SW = 22, SH = 36, FEET = 33;          // 식장에서 차지하는 칸
 const SPR_W = 44, SPR_H = 72, SPR_FEET = 66; // 실제 그림 해상도
@@ -259,7 +261,7 @@ function cleanLook(r){
 function randomLook(rnd){
   const p = a => a[Math.floor(rnd() * a.length)];
   return { s:p(SKINS), h:p(HAIRS.slice(0, 9)), t:p(TOPS), p: rnd() < 0.5 ? '' : p(PANTS),
-           hs:Math.floor(rnd()*HAIR_STYLES.length), o:p(GUEST_OUTFITS),
+           hs:Math.floor(rnd()*HAIR_STYLES.length), o: (r => r < 0.7 ? p(OUTFIT_GROUPS[0][1]) : r < 0.85 ? p(OUTFIT_GROUPS[1][1]) : p(OUTFIT_GROUPS[2][1]))(rnd()),
            a: rnd() < 0.5 ? 0 : 1 + Math.floor(rnd()*(ACCS.length-1)),
            e: rnd() < 0.45 ? 0 : 1 + Math.floor(rnd()*(EYES.length-1)), v:0,
            side: rnd() < 0.5 ? 'groom' : 'bride' };
@@ -281,7 +283,9 @@ function buildSprite(look, frame){
   const hair = look.h, hairSh = shade(hair, .72), hairHi = lighten(hair, .32), hairHi2 = lighten(hair, .55);
   const top = look.t, topSh = shade(top, .78), topSh2 = shade(top, .64), topHi = lighten(top, .22);
   const o = look.o, hs = look.hs, a = look.a || 0, ey = look.e || 0, w1 = frame === 1;
-  const sporty = (o === 3 || o === 5 || o === 12);
+  const sporty = (o === 3 || o === 5 || o === 12 || o === 22);
+  const SANTA = '#c62828', SANTA_S = '#9a1c1c', POLICE = '#2b3a67', POLICE_S = '#1d2849';
+  const hood = (o === 15 || o === 16);
   const autoPants = sporty ? '#3d5a99' : (o === 7 || o === 11) ? '#2b2433' : (o === 8 || o === 9) ? '#3a3a44' : o === 10 ? '#2b2433' : shade(top, .85);
   const pants = look.p || autoPants, pantsSh = shade(pants, .78), pantsHi = lighten(pants, .15);
   const shoe = sporty ? '#f4f4f4' : (o === 10 ? '#5a3a2a' : '#2b2433'), shoeHi = sporty ? '#ffffff' : '#4a4256';
@@ -304,20 +308,51 @@ function buildSprite(look, frame){
     for(let y=22;y<50;y+=6){ PX(12,y,hairHi); PX(31,y+3,hairHi); }
   }
   if(hs === 12){ R(9,16,26,16,hair); E(22,32,13,3,hair); }
+  if(hs === 14 && !hood){                            /* 히피펌 */
+    for(let y=14;y<46;y++){ const w = 16 + Math.round(Math.sin(y/1.6)*1.3) - (y > 40 ? (y-40) : 0); R(22-w,y,w*2,1,hair); }
+    for(let y=16;y<44;y+=3) for(const x of [8,11,33,36]) PX(x + ((y/3)&1),y,hairHi);
+  }
+  if(hs === 16 && !hood){ R(8,16,28,38,hair); R(8,52,28,2,hairSh); R(9,18,2,34,hairSh); R(33,18,2,34,hairSh); }
+  if(hs === 17 && !hood){ R(8,16,28,24,hair); E(22,40,14,3,hair); for(let y=20;y<40;y+=4){ PX(10,y,hairHi); PX(33,y+2,hairHi); } }
+  if(hs === 18 && !hood){
+    E(22,16,18,15,hair);
+    for(let k=0;k<70;k++){ const ang = k*2.399, r = 4 + (k*7)%13; PX(Math.round(22 + Math.cos(ang)*r*1.15), Math.round(15 + Math.sin(ang)*r*0.95), (k%3) ? hairSh : hairHi); }
+  }
+  if(hood){
+    const hc = o === 15 ? top : top, hcS = shade(hc, .78), hcH = lighten(hc, .25);
+    E(22,22,16,15,hc); R(7,22,30,14,hc); R(34,20,3,16,hcS);
+    if(o === 15){ for(const ex of [9,35]){ E(ex,9,5,5,hc); E(ex,9,2.6,2.6,lighten(hc,.45)); } }
+    else { for(let k=0;k<5;k++){ const sx = 10 + k*6, sy = 5 - (k===2 ? 2 : (k===1||k===3) ? 1 : 0); for(let j=0;j<5;j++) R(sx - (4-j)/2 + 1, sy + j, 5 - j, 1, lighten(hc,.35)); } }
+  }
 
   /* ---------- 다리, 신발 ---------- */
-  if(o === 2 || o === 4){
-    const sh = o === 4 ? '#f6f0e6' : '#3a2a3a';
+  if(o === 2 || o === 4 || o === 14 || o === 21 || o === 23){
+    const sh = o === 4 ? '#f6f0e6' : o === 23 ? '#e8c15a' : '#3a2a3a';
     E(17,67 - (w1 ? 1 : 0),3,2,sh); E(27,67,3,2,sh);
-  } else if(o === 6){
+  } else if(o === 22){                               /* 축구: 반바지 + 양말 + 축구화 */
+    R(15,54,7,5,white); R(23,54,7,5,white); R(20,55,2,4,'#dcdcdc'); R(28,55,2,4,'#dcdcdc');
+    R(16,59,5,2,skin); R(24,59,5,2,skin);
+    R(16,61,5,5 - swing,top); R(24,61,5,5,top); R(16,61,5,1,topHi); R(24,61,5,1,topHi);
+    E(18,66 - swing,4.5,2,'#1b1b1f'); E(27,66,4.5,2,'#1b1b1f'); R(15,65 - swing,3,1,'#4a4a52'); R(24,65,3,1,'#4a4a52');
+  } else if(o === 13 || o === 6){
     R(16,58,4,8 - swing/2,skin); R(24,58,4,8,skin); R(19,58,1,8,skinSh); R(27,58,1,8,skinSh);
     E(17,66 - swing/2,3.5,2,shoe); E(26,66,3.5,2,shoe); PX(15,65 - swing/2,shoeHi); PX(24,65,shoeHi);
   } else {
+    const pants = hood ? top : o === 17 ? SANTA : o === 20 ? POLICE : o === 24 ? '#f4f1ea' : look.p || autoPants;
+    const pantsSh = shade(pants, .78), pantsHi = lighten(pants, .15);
     R(15,54,7,12 - swing,pants); R(23,54,7,12,pants);
     R(20,55,2,11 - swing,pantsSh); R(28,55,2,11,pantsSh); R(17,56,1,8 - swing,pantsHi); R(25,56,1,8,pantsHi);
     if(o === 8 || o === 0){ R(18,56,1,9 - swing,pantsSh); R(26,56,1,9,pantsSh); }
+    if(hood){
+      E(18,66 - swing,4.5,2.4,shade(top,.7)); E(27,66,4.5,2.4,shade(top,.7));
+      for(const fx of [16,18,20]) PX(fx,66 - swing,lighten(top,.4)); for(const fx of [25,27,29]) PX(fx,66,lighten(top,.4));
+    } else if(o === 17 || o === 24){
+      R(15,60 - swing,7,6,'#1b1b1f'); R(23,60,7,6,'#1b1b1f'); E(18,66 - swing,4.5,2.2,'#1b1b1f'); E(27,66,4.5,2.2,'#1b1b1f');
+      R(15,60 - swing,7,1,o === 17 ? white : '#e8c15a'); R(23,60,7,1,o === 17 ? white : '#e8c15a');
+    } else {
     E(18,66 - swing,4.5,2.2,shoe); E(27,66,4.5,2.2,shoe);
     R(15,65 - swing,4,1,shoeHi); R(24,65,4,1,shoeHi);
+    }
     if(sporty){ R(14,67 - swing,9,1,'#d6d6dc'); R(23,67,9,1,'#d6d6dc'); }
   }
 
@@ -361,6 +396,42 @@ function buildSprite(look, frame){
     R(17,36,4,3,white); R(23,36,4,3,white); PX(20,39,creamSh); PX(23,39,creamSh);
     for(const y of [41,44,47]) PX(22,y,creamSh);
     arms(cream, creamSh, 13, white);
+  } else if(o === 13){                              /* 미니 원피스 */
+    for(let y=46;y<58;y++){ const half = 10 + Math.round((y-46)*0.33); R(22-half,y,half*2,1,top); }
+    for(const fx of [16,22,28]) for(let y=48;y<57;y++) PX(fx + Math.round((y-48)*((fx-22)/16)), y, topSh);
+    R(12,57,20,1,topSh2);
+    torso(top, topSh, 36, 47);
+    E(10.5,40,2.8,2.6,topHi); E(33.5,40,2.8,2.6,topHi);
+    R(9,42 + swing/2,3,10,skin); R(32,42 - swing/2,3,10,skin); E(10.5,53 + swing/2,2,2,skin); E(33.5,53 - swing/2,2,2,skin);
+    E(19,38,2.6,1.6,white); E(25,38,2.6,1.6,white); PX(22,40,topSh2);
+    R(12,46,20,1,topSh2); E(22,46,2,1.2,white);
+  } else if(o === 14){                              /* 롱 원피스 */
+    for(let y=46;y<65;y++){ const half = 10 + Math.round((y-46)*0.25); R(22-half,y,half*2,1,top); }
+    for(let y=48;y<64;y+=4) for(let x=11 + (y%8 ? 2 : 0); x<33; x+=5){ PX(x,y,white); PX(x+1,y,lighten(top,.6)); PX(x,y+1,lighten(top,.6)); }
+    R(11,64,22,1,topSh2);
+    torso(top, topSh, 36, 47);
+    vNeck(skin, 37, 6);
+    E(10.5,40,2.4,2.2,top); E(33.5,40,2.4,2.2,top);
+    R(9,42 + swing/2,3,10,skin); R(32,42 - swing/2,3,10,skin); E(10.5,53 + swing/2,2,2,skin); E(33.5,53 - swing/2,2,2,skin);
+    R(12,46,20,1,topSh2);
+  } else if(o === 23){                              /* 공주 드레스 */
+    for(let y=46;y<66;y++){ const half = 10 + Math.round((y-46)*0.42); R(22-half,y,half*2,1,top); }
+    for(const ty of [52,58]) for(let x=0;x<44;x++){ const half = 10 + Math.round((ty-46)*0.42); if(Math.abs(x-22) < half) PX(x, ty + ((x>>1)&1), topSh); }
+    for(let k=0;k<18;k++) PX(10 + (k*7)%24, 48 + (k*5)%16, white);
+    R(9,65,26,1,topSh2);
+    torso(top, topSh, 36, 47);
+    R(15,37,14,2,skin); E(19,39,3,1.4,top); E(25,39,3,1.4,top);
+    E(10.5,40,3,2.8,topHi); E(33.5,40,3,2.8,topHi);
+    R(9,43 + swing/2,3,9,skin); R(32,43 - swing/2,3,9,skin); E(10.5,53 + swing/2,2,2,skin); E(33.5,53 - swing/2,2,2,skin);
+    R(12,46,20,1,'#e8c15a'); E(22,46,1.5,1.5,'#e8c15a');
+  } else if(o === 21){                              /* 마법사 로브 */
+    for(let y=36;y<65;y++){ const half = 10 + Math.round(Math.max(0, y-44)*0.28); R(22-half,y,half*2,1,top); }
+    R(29,40,3,24,topSh); R(10,64,24,1,topSh2);
+    E(22,38,8,3,topSh2); vNeck(topSh2, 37, 6);
+    for(let k=0;k<9;k++){ const sx = 13 + (k*7)%18, sy = 44 + (k*5)%18; PX(sx,sy,'#ffe066'); PX(sx-1,sy,'#ffe066'); PX(sx+1,sy,'#ffe066'); PX(sx,sy-1,'#ffe066'); PX(sx,sy+1,'#ffe066'); }
+    R(13,48,18,2,'#e8c15a');
+    for(const [ax, ay] of [[8, 39 + swing], [31, 41 - swing]]){ for(let j=0;j<14;j++) R(ax - (j>8 ? 1 : 0), ay + j, 5 + (j>8 ? 2 : 0), 1, top); }
+    E(11,55 + swing,2.2,2.2,skin); E(33,57 - swing,2.2,2.2,skin);
   } else if(o === 10){                              /* 트렌치코트 */
     for(let y=52;y<62;y++){ const half = 10 + Math.round((y-52)*0.25); R(22-half,y,half*2,1,top); }
     R(21,52,2,10,topSh); R(12,61,20,1,topSh2);
@@ -419,6 +490,51 @@ function buildSprite(look, frame){
       arms(top, topSh, 13, topSh2);
       R(12,52,20,3,topSh2); for(let x=12;x<32;x+=2) PX(x,53,topSh);
       R(18,43,8,3,topHi); R(19,44,6,1,top);
+    } else if(hood){                                /* 곰돌이·공룡 잠옷 */
+      arms(top, topSh, 13, shade(top,.7));
+      E(22,47,6,7,lighten(top, o === 15 ? .45 : .5));
+      if(o === 16){ for(let y=42;y<54;y+=3) R(18,y,9,1,lighten(top,.3)); E(37,54,4,2.5,top); E(40,53,2,1.5,lighten(top,.2)); }
+      R(12,53,20,2,topSh);
+    } else if(o === 17){                            /* 산타 */
+      torso(SANTA, SANTA_S, 36, 55);
+      R(21,38,2,17,white); R(12,52,20,3,white); E(22,37,7,2,white);
+      R(12,47,20,2,'#1b1b1f'); R(20,46,4,4,'#e8c15a'); R(21,47,2,2,'#1b1b1f');
+      arms(SANTA, SANTA_S, 13, white);
+    } else if(o === 18){                            /* 셰프 */
+      torso(white, '#e2e2e2', 36, 55);
+      R(19,36,6,3,'#c0392b'); PX(22,39,'#9a2a1f');
+      for(const y of [42,46,50]){ PX(18,y,'#8a8a92'); PX(26,y,'#8a8a92'); }
+      R(22,40,1,15,'#e2e2e2');
+      arms(white, '#e2e2e2', 13, '#e2e2e2');
+    } else if(o === 19){                            /* 의사 가운 */
+      vNeck(top, 37, 9);
+      R(13,37,20,0,white);
+      torso(white, '#e2e2e2', 36, 58);
+      vNeck(top, 37, 9); lapels('#cfcfd6', 37, 11);
+      R(21,47,2,11,'#e2e2e2'); R(25,46,4,3,'#e2e2e2'); PX(26,45,'#3d5a99');
+      for(let i=0;i<9;i++){ PX(16 + Math.round(i*0.3), 38 + i, '#4a4a52'); PX(28 - Math.round(i*0.3), 38 + i, '#4a4a52'); }
+      R(17,47,10,1,'#4a4a52'); E(22,48.5,1.6,1.6,'#9aa0a6');
+      arms(white, '#e2e2e2', 13, '#e2e2e2');
+    } else if(o === 20){                            /* 경찰 */
+      torso(POLICE, POLICE_S, 36, 55);
+      vNeck('#cfd8ea', 37, 6); R(21,40,2,8,'#151c33');
+      R(14,42,5,3,POLICE_S); R(25,42,5,3,POLICE_S); E(16,46,1.6,2,'#e8c15a');
+      R(12,52,20,2,'#151419'); R(21,52,3,2,'#c9ced8');
+      arms(POLICE, POLICE_S, 13, POLICE_S);
+      R(9,40 + swing,4,1,'#e8c15a');
+    } else if(o === 22){                            /* 축구 유니폼 */
+      R(9,39 + swing,4,6,top); R(31,41 - swing,4,6,top); R(9,44 + swing,4,1,white); R(31,46 - swing,4,1,white);
+      R(9,45 + swing,4,7,skin); R(31,47 - swing,4,7,skin); E(11,53 + swing,2.2,2.2,skin); E(33,55 - swing,2.2,2.2,skin);
+      vNeck(white, 37, 4); R(13,40,2,14,white); R(29,40,2,14,white);
+      const num = [[0,0],[0,1],[0,2],[0,3],[0,4],[2,0],[3,0],[4,0],[2,4],[3,4],[4,4],[2,1],[2,2],[2,3],[4,1],[4,2],[4,3]];
+      for(const [nx, ny] of num) PX(19 + nx, 44 + ny, white);
+    } else if(o === 24){                            /* 왕자 */
+      torso(top, topSh, 36, 55);
+      R(21,38,2,17,'#e8c15a'); for(const y of [41,44,47,50]){ PX(19,y,'#e8c15a'); PX(25,y,'#e8c15a'); }
+      for(let i=0;i<16;i++) R(14 + i, 38 + Math.round(i*0.95), 2, 2, '#c0392b');
+      R(12,52,20,2,'#e8c15a');
+      arms(top, topSh, 13, '#e8c15a');
+      for(const ex of [10, 33]){ R(ex-2,38,5,2,'#e8c15a'); for(let k=0;k<5;k++) PX(ex-2+k,40,(k&1) ? '#c9a23a' : '#e8c15a'); }
     } else {                                        /* 캐주얼 */
       R(9,39 + swing,4,6,top); R(31,41 - swing,4,6,top); R(12,40 + swing,1,5,topSh); R(34,42 - swing,1,5,topSh);
       R(9,45 + swing,4,7,skin); R(31,47 - swing,4,7,skin); R(12,45 + swing,1,7,skinSh); R(34,47 - swing,1,7,skinSh);
@@ -459,7 +575,19 @@ function buildSprite(look, frame){
   E(14,31,2,1,'#f6a7ab'); E(30,31,2,1,'#f6a7ab');
 
   /* ---------- 앞머리 ---------- */
-  if(hs === 8){
+  if(hood){
+    for(let i=0;i<22;i++){ const x = 11 + i; R(x,17,1,2 + ((i*3)%3),hair); }
+  } else if(hs === 18){                              /* 아프로 */
+    E(22,13,16,8,hair); R(8,13,28,5,hair);
+    for(let x=9;x<36;x++) R(x,17,1,1 + ((x*5)%3 === 0 ? 1 : 0),hair);
+    for(let k=0;k<30;k++){ const ang = k*2.399, r = 3 + (k*5)%10; PX(Math.round(22 + Math.cos(ang)*r*1.4), Math.round(11 + Math.sin(ang)*r*0.55), (k%2) ? hairSh : hairHi); }
+    R(8,16,3,10,hair); R(33,16,3,10,hair);
+  } else if(hs === 19){                              /* 스파이크 */
+    E(22,15,12.5,6,hair); R(10,15,24,4,hair);
+    for(let k=0;k<6;k++){ const sx = 10 + k*4.4; for(let j=0;j<7;j++) R(Math.round(sx + j*0.3), 3 + k%2 + j, Math.max(1, Math.round((j+1)*0.7)), 1, hair); PX(Math.round(sx + 1), 5 + k%2, hairHi); }
+    for(let i=0;i<24;i++) R(10 + i, 19, 1, 1 + (i%3 === 0 ? 1 : 0), hair);
+    R(9,18,3,8,hairSh); R(32,18,3,8,hairSh);
+  } else if(hs === 8){
     E(22,16,12,6.5,hairSh); R(10,16,24,4,hairSh);
     for(let y=11;y<20;y+=2) for(let x=12 + (y%4===1?1:0);x<33;x+=3) PX(x,y,hair);
   } else if(hs === 10){                              /* 올백 */
@@ -478,7 +606,11 @@ function buildSprite(look, frame){
       3:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
       6:[4,6,5,7,5,6,4,6,5,7,5,6,4,6,5,7,5,6,4,6,5,7,5,6,4],
       9:[2,3,3,2,3,3,2,3,3,2,3,3,2,3,3,2,3,3,2,3,3,2,3,3,2],
-      13:[2,3,3,4,4,5,5,6,6,6,7,7,7,6,6,5,4,3,2,2,1,1,1,1,1]
+      13:[2,3,3,4,4,5,5,6,6,6,7,7,7,6,6,5,4,3,2,2,1,1,1,1,1],
+      14:[4,6,5,7,5,6,4,6,5,7,5,6,4,6,5,7,5,6,4,6,5,7,5,6,4],
+      15:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+      16:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+      17:[8,8,7,7,6,6,5,4,3,2,1,0,0,0,1,2,3,4,5,6,6,7,7,8,8]
     }[hs] || [3,4,5,4,3,5,6,4,3,4,5,4,3,5,4,3,4,5,4,3,4,3,2,3,2];
     for(let i=0;i<25;i++){ const x = 10 + i, d = bangs[i]; R(x,19,1,d,hair); PX(x,19+d,hairSh); }
     if(hs === 9){
@@ -489,6 +621,10 @@ function buildSprite(look, frame){
       R(9,18,3,11,hair); R(32,18,3,11,hair); PX(9,29,hairSh); PX(34,29,hairSh);
     }
     if(hs === 13){ E(23,25,2,2.2,hair); PX(22,24,hairSh); PX(24,27,hairSh); R(20,26,2,1,hair); }
+    if(hs === 14){ for(const [x,y] of [[8,24],[36,24],[8,31],[36,31],[9,38],[35,38]]) E(x,y,2.8,2.8,hair); for(const [x,y] of [[8,23],[36,30],[9,37]]) PX(x,y,hairHi); }
+    if(hs === 15){ R(8,20,4,12,hair); R(32,20,4,12,hair); for(const bx of [10,34]){ E(bx,8,5,4.6,hair); E(bx-1,7,2,1.5,hairHi); PX(bx+1,10,hairSh); } }
+    if(hs === 16){ R(8,20,4,14,hair); R(32,20,4,14,hair); R(8,33,4,1,hairSh); R(32,33,4,1,hairSh); }
+    if(hs === 17){ R(8,20,4,18,hair); R(32,20,4,18,hair); R(11,22,1,15,hairSh); R(32,22,1,15,hairSh); R(21,9,2,10,hairSh); }
     if(hs === 2){ R(8,20,4,26,hair); R(32,20,4,26,hair); R(11,22,1,22,hairSh); R(32,22,1,22,hairSh); }
     if(hs === 3){ R(8,20,4,15,hair); R(32,20,4,15,hair); R(8,34,4,1,hairSh); R(32,34,4,1,hairSh); }
     if(hs === 6){ for(const [x,y] of [[9,24],[35,24],[9,30],[35,30]]) E(x,y,2.5,2.5,hair); }
@@ -538,6 +674,38 @@ function buildSprite(look, frame){
     const [hx, hy] = handR;
     R(hx - 1, hy - 4, 1, 4, '#5a3a2a'); R(hx + 4, hy - 4, 1, 4, '#5a3a2a'); R(hx - 1, hy - 5, 6, 1, '#5a3a2a');
     R(hx - 2, hy, 8, 6, bg); R(hx - 2, hy, 8, 1, bgH); R(hx + 5, hy + 1, 1, 5, bgS); R(hx + 1, hy + 2, 2, 1, '#d4b06a');
+  }
+
+  /* ---------- 코스튬 모자 ---------- */
+  if(hood){
+    const hc = top, hcS = shade(hc, .78), hcH = lighten(hc, .25);
+    E(22,13,14,7,hc); R(8,13,28,4,hc); R(8,17,3,14,hc); R(33,17,3,14,hc);
+    for(let x=10;x<35;x++) PX(x,17,hcS);
+    E(16,9,4,1.4,hcH);
+    if(o === 16){
+      for(const ex of [15, 29]){ E(ex,10,2.4,2.4,white); E(ex+0.5,10.5,1.1,1.1,'#1b1b1f'); }
+      for(let x=11;x<34;x+=3){ PX(x,18,white); PX(x+1,18,white); PX(x,19,white); }
+    }
+  } else if(o === 17){                               /* 산타 모자 */
+    E(22,11,12.5,6.5,SANTA); R(10,8,20,5,SANTA);
+    for(let k=0;k<12;k++) R(28 + k, 5 + Math.round(k*0.5), 3, 3, SANTA);
+    E(41,12,2.8,2.8,white); E(16,8,3,1.2,'#e04545');
+    R(8,14,28,4,white); for(let x=9;x<35;x+=2) PX(x,14,'#e6e6e6');
+  } else if(o === 18){                               /* 셰프 모자 */
+    R(12,4,20,10,white); E(15,5,5,4,white); E(22,3,6,4,white); E(29,5,5,4,white);
+    R(10,12,24,5,'#f0f0f0'); for(let x=13;x<32;x+=4) R(x,5,1,7,'#e2e2e2');
+  } else if(o === 20){                               /* 경찰 모자 */
+    E(22,11,13,6,POLICE); R(9,11,26,3,POLICE); R(9,14,26,3,'#151c33');
+    E(22,18,11,1.8,'#111'); E(22,9,2,2.4,'#e8c15a'); PX(22,9,'#fff3b0');
+  } else if(o === 21){                               /* 마법사 모자 */
+    for(let j=0;j<16;j++){ const w = Math.round(1 + j*0.85); R(24 - w + Math.round((15-j)*0.35), -1 + j, w*2, 1, top); }
+    E(22,15,17,2.6,topSh); R(12,12,20,2,'#e8c15a');
+    for(const [x,y] of [[20,7],[25,4]]){ PX(x,y,'#ffe066'); PX(x-1,y,'#ffe066'); PX(x+1,y,'#ffe066'); PX(x,y-1,'#ffe066'); PX(x,y+1,'#ffe066'); }
+  } else if(o === 23 || o === 24){                   /* 왕관 */
+    const gd = '#e8c15a', gdS = '#b8902a';
+    R(15,8,14,4,gd); R(15,11,14,1,gdS);
+    for(const px of [15,19,22,25,28]) R(px,5 + (px === 22 ? -1 : 0),2,3 + (px === 22 ? 1 : 0),gd);
+    PX(22,9,'#c0392b'); PX(18,9,'#6fa8dc'); PX(26,9,'#6fa8dc');
   }
 
   /* ---------- 면사포 (신부) ---------- */
